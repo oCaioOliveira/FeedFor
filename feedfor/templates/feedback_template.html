@@ -1,0 +1,42 @@
+<!-- feedback_template.html -->
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Feedback Formativo</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            .feedback {
+                margin-bottom: 20px;
+            }
+            .correct-answer {
+                color: green;
+                font-weight: bold;
+            }
+            .incorrect-answer {
+                color: red;
+                font-weight: bold;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Feedback Formativo - {{ questionnaire_name }}</h1>
+        {% for feedback in feedbacks %}
+        <div class="feedback">
+            <h2>Questão: {{ feedback.question }}</h2>
+            {% if feedback.correct %}
+            <p class="correct-answer">✔ {{ feedback.answer }}</p>
+            {% else %}
+            <p><strong>Sua resposta: </strong></p>
+            <p class="incorrect-answer">✘ {{ feedback.answer }}</p>
+            <p>
+                <strong>Resposta correta:</strong> {{ feedback.correct_answer }}
+            </p>
+            {% endif %}
+            <p><strong>Feedback:</strong> {{ feedback.formative_feedback }}</p>
+        </div>
+        {% endfor %}
+    </body>
+</html>
