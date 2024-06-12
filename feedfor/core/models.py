@@ -16,6 +16,8 @@ class Student(models.Model):
 
 class Questionnaire(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, blank=False, null=False)
+    content = models.CharField(max_length=255, blank=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
     external_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
 
@@ -25,15 +27,15 @@ class Questionnaire(models.Model):
         verbose_name_plural = "Questionarios"
 
     def __str__(self):
-        return f"{self.id} - {self.external_id}"
+        return f"{self.id} - {self.name}"
 
 
 class Item(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     question = models.CharField(max_length=255, blank=False, null=False)
     answer = models.CharField(max_length=255, blank=False, null=False)
-    subject = models.CharField(max_length=255, blank=False, null=False)
-    correct_answer = models.CharField(max_length=255, blank=True, null=True)
+    subcontent = models.CharField(max_length=255, blank=False, null=False)
+    correct_answer = models.CharField(max_length=255, blank=False, null=False)
 
     questionnaire = models.ForeignKey(Questionnaire, related_name='items', on_delete=models.RESTRICT)
 
