@@ -22,7 +22,7 @@ def check_answers(items):
     
     return feedbacks
 
-def generate_formative_feedback(feedbacks, questionnaire_subject):
+def generate_formative_feedback(feedbacks, questionnaire_content):
     detailed_feedbacks = []
 
     for feedback in feedbacks:
@@ -33,7 +33,7 @@ def generate_formative_feedback(feedbacks, questionnaire_subject):
                 f"Questão: {feedback['question']}\n"
                 f"Resposta do aluno: {feedback['answer']}\n"
                 f"Resposta correta: {feedback['correct_answer']}\n"
-                f"Assunto do questionário: {questionnaire_subject}\n"
+                f"Assunto do questionário: {questionnaire_content}\n"
                 f"Subconteúdo: {feedback['subcontent']}\n"
                 "Explique por que a resposta do aluno está incorreta e qual deveria ser a resposta correta. "
                 "Relacione a explicação do erro com o conteúdo e subconteúdo."
