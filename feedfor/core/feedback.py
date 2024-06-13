@@ -5,11 +5,15 @@ openai.api_key = settings.OPENAI_API_KEY
 
 def check_answers(items):
     feedbacks = []
+    correct_count_answers = 0
 
     for item in items:
         correct = item.get("correct_answer")
         student_answer = item.get("answer")
         is_correct = correct.strip().lower() == student_answer.strip().lower()
+
+        if is_correct:
+            correct_count_answers += 1
 
         feedback = {
             "question": item.get("question"),
@@ -19,8 +23,8 @@ def check_answers(items):
             "subcontent": item.get("subcontent"),
         }
         feedbacks.append(feedback)
-    
-    return feedbacks
+
+    return feedbacks, correct_count_answers
 
 def generate_formative_feedback(feedbacks, questionnaire_content):
     detailed_feedbacks = []
@@ -39,23 +43,22 @@ def generate_formative_feedback(feedbacks, questionnaire_content):
                 "Relacione a explicação do erro com o conteúdo e subconteúdo."
             )
 
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "Você é um assistente útil."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=150
-            )
-
-            feedback_text = response.choices[0].message['content'].strip()
-
-            # MOCK_FEEDBACK
-            # feedback_text = (
-            #     f"A questão estava relacionada ao subconteúdo '{feedback['subcontent']}'. "
-            #     f"A resposta correta é '{feedback['correct_answer']}'. "
-            #     "Revise o conteúdo sobre este tópico para melhorar seu entendimento."
+            # response = openai.ChatCompletion.create(
+            #     model="gpt-3.5-turbo",
+            #     messages=[
+            #         {"role": "system", "content": "Você é um assistente útil."},
+            #         {"role": "user", "content": prompt}
+            #     ],
+            #     max_tokens=150
             # )
+
+            # feedback_text = response.choices[0].message['content'].strip()
+
+            feedback_text = (
+                f"A questão estava relacionada ao subconteúdo '{feedback['subcontent']}'. "
+                f"A resposta correta é '{feedback['correct_answer']}'. "
+                "Revise o conteúdo sobre este tópico para melhorar seu entendimento."
+            )
         
         feedback["formative_feedback"] = feedback_text
         detailed_feedbacks.append(feedback)
