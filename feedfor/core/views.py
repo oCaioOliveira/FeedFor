@@ -8,7 +8,7 @@ from weasyprint import HTML
 
 from .models import Student, Questionnaire, Item
 from .feedback import check_answers, generate_formative_feedback
-from .utils import send_feedback_email
+from .tasks import send_feedback_email
 
 class SubmitQuestionnaireView(APIView):
     def post(self, request):
@@ -36,9 +36,9 @@ class SubmitQuestionnaireView(APIView):
                 correct_answer=item_data.get('correct_answer')
             )
 
-        feedbacks = check_answers(items_data)
+        feedbacks, correct_count_answers = check_answers(items_data)
         formative_feedback = generate_formative_feedback(feedbacks, content)
 
-        send_feedback_email(email, questionnaire.name, formative_feedback)
+        send_feedback_email.delay(email, questionnaire.name, formative_feedback, correct_count_answers)
 
         return Response({'message': 'Questionnaire submitted successfully'}, status=status.HTTP_201_CREATED)
