@@ -23,6 +23,10 @@
     </head>
     <body>
         <h1>Feedback Formativo - {{ questionnaire_name }}</h1>
+        <p>
+            <strong>Total de respostas corretas:</strong>
+            {{ correct_count_answers }}/{{ feedbacks|length }}
+        </p>
         {% for feedback in feedbacks %}
         <div class="feedback">
             <h2>Questão: {{ feedback.question }}</h2>
