@@ -1,18 +1,24 @@
-import os
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from weasyprint import HTML
+def check_answers(answers):
+    feedbacks = []
+    correct_count_answers = 0
 
-def send_feedback_email(email, questionnaire_name, feedbacks):
-    html_string = render_to_string('feedback_template.html', {'questionnaire_name': questionnaire_name, 'feedbacks': feedbacks})
-    html = HTML(string=html_string)
-    pdf_file = html.write_pdf()
+    for answer in answers:
+        correct = answer.item.correct_answer
+        student_answer = answer.text
+        is_correct = correct.strip().lower() == student_answer.strip().lower()
 
-    email_message = EmailMessage(
-        f'Feedback Formativo - {questionnaire_name}',
-        f'Olá, encontre em anexo o seu feedback formativo referente ao questionário "{questionnaire_name}".',
-        os.getenv("EMAIL_HOST_USER", ""),
-        [email]
-    )
-    email_message.attach('formative_feedback.pdf', pdf_file, 'application/pdf')
-    email_message.send()
+        if is_correct:
+            correct_count_answers += 1
+
+        feedback = {
+            "question": answer.item.question,
+            "answer": student_answer,
+            "correct_answer": correct,
+            "correct": is_correct,
+            "subcontent": answer.item.subcontent,
+            "feedback": answer.feedback,
+            "answer_id": answer.id,
+        }
+        feedbacks.append(feedback)
+
+    return feedbacks, correct_count_answers
