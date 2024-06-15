@@ -1,4 +1,3 @@
-<!-- feedback_template.html -->
 <!DOCTYPE html>
 <html lang="pt-br">
     <head>
@@ -31,15 +30,24 @@
         <div class="feedback">
             <h2>Questão: {{ feedback.question }}</h2>
             {% if feedback.correct %}
+            <p><strong>Sua resposta: </strong></p>
             <p class="correct-answer">✔ {{ feedback.answer }}</p>
             {% else %}
             <p><strong>Sua resposta: </strong></p>
             <p class="incorrect-answer">✘ {{ feedback.answer }}</p>
+            <p><strong>Resposta correta:</strong></p>
+            <p>{{ feedback.correct_answer }}</p>
+            {% endif %} {% if feedback.explanation %}
             <p>
-                <strong>Resposta correta:</strong> {{ feedback.correct_answer }}
+                <strong>Explicação:</strong>
+                {{ feedback.explanation }}
+            </p>
+            {% endif %} {% if feedback.improve_suggestions %}
+            <p>
+                <strong>Sugestão de Melhora:</strong>
+                {{ feedback.improve_suggestions }}
             </p>
             {% endif %}
-            <p><strong>Feedback:</strong> {{ feedback.formative_feedback }}</p>
         </div>
         {% endfor %}
     </body>
