@@ -6,14 +6,14 @@ from weasyprint import HTML
 import os
 
 @shared_task
-def send_feedback_email(email, questionnaire_name, feedbacks, correct_count_answers):
-    html_string = render_to_string('feedback_template.html', {'questionnaire_name': questionnaire_name, 'feedbacks': feedbacks, 'correct_count_answers': correct_count_answers})
+def send_feedback_email(email, questionnaire_title, feedbacks, correct_count_answers):
+    html_string = render_to_string('feedback_template.html', {'questionnaire_title': questionnaire_title, 'feedbacks': feedbacks, 'correct_count_answers': correct_count_answers})
     html = HTML(string=html_string)
     pdf_file = html.write_pdf()
 
     email_message = EmailMessage(
-        f'Feedback Formativo - {questionnaire_name}',
-        f'Olá, encontre em anexo o seu feedback formativo referente ao questionário: "{questionnaire_name}".',
+        f'Feedback Formativo - {questionnaire_title}',
+        f'Olá, encontre em anexo o seu feedback formativo referente ao questionário: "{questionnaire_title}".',
         os.getenv("EMAIL_HOST_USER", ""),
         [email]
     )
