@@ -10,7 +10,10 @@ import os
 
 @shared_task
 def send_formative_feedback_email(
-    email: str, questionnaire_title: str, feedbacks: list, correct_count_answers: int
+    email: str,
+    questionnaire_title: str,
+    feedbacks: List[Dict[str, Union[str, bool, int]]],
+    correct_count_answers: int,
 ) -> None:
     try:
         html_string = render_to_string(
@@ -72,19 +75,45 @@ def generate_feedback_details(
     for feedback in feedbacks:
         if feedback["correct"]:
             feedback_text = "Bom trabalho! Você acertou a questão."
-        elif feedback["feedback"]:
-            feedback_text = feedback["feedback"]
-        else:
+        elif not (feedback["explanation"] and feedback["improve_suggestions"]):
             feedback_text = generate_openai_feedback(
                 feedback, questionnaire_content, openai_api_key
             )
 
-            save_feedback_to_answer(feedback["answer_id"], feedback_text)
+            (
+                feedback["explanation"],
+                feedback["improve_suggestions"],
+            ) = format_feedback(feedback_text)
 
-        feedback["formative_feedback"] = feedback_text
+            save_feedback_to_answer(
+                feedback["answer_id"],
+                feedback["explanation"],
+                feedback["improve_suggestions"],
+            )
+
         detailed_feedbacks.append(feedback)
 
     return detailed_feedbacks
+
+
+def format_feedback(
+    feedback_text: str,
+) -> Dict[str, str]:
+    if (
+        "Explicação" in feedback_text
+        and "Sugestões de Aperfeiçoamento" in feedback_text
+    ):
+        explanation = (
+            feedback_text.split("Explicação:")[1]
+            .split("Sugestões de Aperfeiçoamento:")[0]
+            .strip()
+        )
+        suggestions = feedback_text.split("Sugestões de Aperfeiçoamento:")[1].strip()
+    else:
+        explanation = feedback_text
+        suggestions = ""
+
+    return explanation, suggestions
 
 
 def generate_openai_feedback(
@@ -99,7 +128,9 @@ def generate_openai_feedback(
         f"Conteúdo do questionário: {questionnaire_content}\n"
         f"Subconteúdo da questão: {feedback['subcontent']}\n"
         "Explique por que a resposta do aluno está incorreta e qual deveria ser a resposta certa.\n"
-        "Além disso, relacione a explicação do erro com o conteúdo do questionário e subconteúdo da questão por meio da explicação."
+        "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto.\n"
+        "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
+        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado."
     )
 
     openai.api_key = openai_api_key
@@ -109,18 +140,21 @@ def generate_openai_feedback(
         messages=[
             {
                 "role": "system",
-                "content": "Você é um assistente especializado em requisitos de software. Sua função é fornecer feedback factual e preciso baseado em conhecimentos específicos nessa área. Evite especulações ou criar novos conceitos. Responda apenas com base em fatos conhecidos e comprovados. Limitei a sua resposta a 150 tokens, responda sem exceder esse limite.",
+                "content": "Você é um assistente especializado em requisitos de software. Sua função é fornecer feedback factual e preciso baseado em conhecimentos específicos nessa área. Evite especulações ou criar novos conceitos. Responda apenas com base em fatos conhecidos e comprovados. Limite sua resposta a 150 tokens, responda sem exceder esse limite.",
             },
             {"role": "user", "content": prompt},
         ],
-        max_tokens=150,
+        max_tokens=200,
         temperature=0,
     )
 
     return response.choices[0].message["content"].strip()
 
 
-def save_feedback_to_answer(answer_id: int, feedback_text: str) -> None:
+def save_feedback_to_answer(
+    answer_id: int, feedback_explanation: str, feedback_improve_suggestions: str
+) -> None:
     answer = Answer.objects.get(id=answer_id)
-    answer.feedback = feedback_text
+    answer.feedback_explanation = feedback_explanation
+    answer.feedback_improve_suggestions = feedback_improve_suggestions
     answer.save()
