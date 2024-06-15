@@ -1,0 +1,2 @@
+class FeedbackGenerationException(Exception):
+    pass
