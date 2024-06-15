@@ -1,4 +1,4 @@
-def check_answers(answers):
+def check_answers(answers: list) -> tuple:
     feedbacks = []
     correct_count_answers = 0
 
