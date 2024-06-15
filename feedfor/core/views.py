@@ -3,9 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Student, Questionnaire, Item, Answer
-from .utils import check_answers
+from .models import Student, Questionnaire, Item, Answer, Result
 from .tasks import generate_formative_feedback
+from .exceptions import FeedbackGenerationException
 
 
 class SubmitQuestionnaireView(APIView):
@@ -31,7 +31,7 @@ class SubmitQuestionnaireView(APIView):
 
             answers = self._save_items_and_answers(questionnaire, items_data, student)
 
-            self._process_feedback(answers, content, email, questionnaire.title)
+            self._process_feedback(answers, content, email, questionnaire, student)
 
             return Response(
                 {"message": "Questionnaire submitted successfully"},
@@ -67,21 +67,63 @@ class SubmitQuestionnaireView(APIView):
         return answers
 
     def _process_feedback(
-        self, answers: list, content: str, email: str, questionnaire_title: str
+        self,
+        answers: list,
+        content: str,
+        email: str,
+        questionnaire: Questionnaire,
+        student: Student,
     ) -> None:
         try:
             openai_api_key: str = settings.OPENAI_API_KEY
-            feedbacks, correct_count_answers = check_answers(answers)
+            feedbacks, correct_count_answers = self._check_answers(answers)
+            self._save_result(answers, correct_count_answers, questionnaire, student)
             generate_formative_feedback.delay(
                 feedbacks,
                 content,
                 openai_api_key,
                 email,
-                questionnaire_title,
+                questionnaire.title,
                 correct_count_answers,
             )
         except Exception as e:
-            self._handle_error("Error generating feedback", str(e))
+            raise FeedbackGenerationException("Error generating feedback", str(e))
+
+    def _check_answers(self, answers: list) -> tuple:
+        feedbacks = []
+        correct_count_answers = 0
+
+        for answer in answers:
+            correct = answer.item.correct_answer
+            student_answer = answer.text
+            is_correct = correct.strip().lower() == student_answer.strip().lower()
+
+            if is_correct:
+                correct_count_answers += 1
+
+            feedback = {
+                "question": answer.item.question,
+                "answer": student_answer,
+                "correct_answer": correct,
+                "correct": is_correct,
+                "subcontent": answer.item.subcontent,
+                "explanation": answer.feedback_explanation,
+                "improve_suggestions": answer.feedback_improve_suggestions,
+                "answer_id": answer.id,
+            }
+            feedbacks.append(feedback)
+
+        return feedbacks, correct_count_answers
+
+    def _save_result(
+        self,
+        answers: list,
+        correct_count_answers: int,
+        questionnaire: Questionnaire,
+        student: Student,
+    ) -> None:
+        score = (correct_count_answers / len(answers)) * 100
+        Result.objects.create(score=score, questionnaire=questionnaire, student=student)
 
     def _handle_error(self, message: str, reason: str) -> Response:
         return Response(
