@@ -3,7 +3,7 @@ from celery import shared_task
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from weasyprint import HTML
-from .models import Answer
+from .models import Answer, ModelSettings
 import openai
 import os
 
@@ -44,14 +44,15 @@ def send_formative_feedback_email(
 def generate_formative_feedback(
     feedbacks: List[Dict[str, Union[str, bool, int]]],
     questionnaire_content: str,
-    openai_api_key: str,
     email: str,
     questionnaire_title: str,
     correct_count_answers: int,
+    model_settings_id: str,
 ) -> None:
     try:
+        model_settings = ModelSettings.objects.get(id=model_settings_id)
         detailed_feedbacks = generate_feedback_details(
-            feedbacks, questionnaire_content, openai_api_key
+            feedbacks, questionnaire_content, model_settings
         )
 
         send_formative_feedback_email.delay(
@@ -68,7 +69,7 @@ def generate_formative_feedback(
 def generate_feedback_details(
     feedbacks: List[Dict[str, Union[str, bool, int]]],
     questionnaire_content: str,
-    openai_api_key: str,
+    model_settings: ModelSettings,
 ) -> List[Dict[str, Union[str, bool, int]]]:
     detailed_feedbacks = []
 
@@ -77,7 +78,7 @@ def generate_feedback_details(
             feedback_text = "Bom trabalho! Você acertou a questão."
         elif not (feedback["explanation"] and feedback["improve_suggestions"]):
             feedback_text = generate_openai_feedback(
-                feedback, questionnaire_content, openai_api_key
+                feedback, questionnaire_content, model_settings
             )
 
             (
@@ -119,8 +120,9 @@ def format_feedback(
 def generate_openai_feedback(
     feedback: Dict[str, Union[str, bool, int]],
     questionnaire_content: str,
-    openai_api_key: str,
+    model_settings: ModelSettings,
 ) -> str:
+    max_tokens = model_settings.max_tokens
     prompt = (
         f"Questão: {feedback['question']}\n"
         f"Resposta do aluno: {feedback['answer']}\n"
@@ -130,22 +132,23 @@ def generate_openai_feedback(
         "Explique por que a resposta do aluno está incorreta e qual deveria ser a resposta certa.\n"
         "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto.\n"
         "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
-        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado."
+        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado.\n"
+        f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
-    openai.api_key = openai_api_key
+    openai.api_key = model_settings.openai_api_key
 
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model=model_settings.model,
         messages=[
             {
                 "role": "system",
-                "content": "Você é um assistente especializado em requisitos de software. Sua função é fornecer feedback factual e preciso baseado em conhecimentos específicos nessa área. Evite especulações ou criar novos conceitos. Responda apenas com base em fatos conhecidos e comprovados. Limite sua resposta a 150 tokens, responda sem exceder esse limite.",
+                "content": model_settings.system_content,
             },
             {"role": "user", "content": prompt},
         ],
-        max_tokens=200,
-        temperature=0,
+        max_tokens=max_tokens,
+        temperature=float(model_settings.temperature),
     )
 
     return response.choices[0].message["content"].strip()

@@ -3,7 +3,16 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from .models import Student, Questionnaire, Item, Answer, Result
+from .models import (
+    Student,
+    Questionnaire,
+    Item,
+    Answer,
+    Result,
+    Teacher,
+    Subject,
+    ModelSettings,
+)
 from .tasks import generate_formative_feedback
 from .exceptions import FeedbackGenerationException
 
@@ -12,26 +21,40 @@ class SubmitQuestionnaireView(APIView):
     def post(self, request) -> Response:
         try:
             data = request.data
-            email: str = data.get("email")
+            student_email: str = data.get("student_email")
+            teacher_email: str = data.get("teacher_email")
             title: str = data.get("title")
             content: str = data.get("content")
             external_id: str = data.get("external_id")
             items_data: list = data.get("items", [])
+            subject_name: str = data.get("subject_name")
+            subject_code: str = data.get("subject_code")
+            model_settings_id: str = data.get("model_settings_id")
 
-            student, _ = Student.objects.get_or_create(email=email)
+            student, _ = Student.objects.get_or_create(email=student_email)
+            teacher, _ = Teacher.objects.get_or_create(email=teacher_email)
+
+            model_settings = ModelSettings.objects.get(id=model_settings_id)
+
+            subject = self._save_subject(
+                subject_code, subject_name, model_settings, student, teacher
+            )
 
             questionnaire, _ = Questionnaire.objects.get_or_create(
                 external_id=external_id,
                 defaults={
                     "content": content,
                     "title": title,
+                    "subject": subject,
                 },
             )
             questionnaire.students.add(student)
 
             answers = self._save_items_and_answers(questionnaire, items_data, student)
 
-            self._process_feedback(answers, content, email, questionnaire, student)
+            self._process_feedback(
+                answers, content, student_email, questionnaire, student, model_settings
+            )
 
             return Response(
                 {"message": "Questionnaire submitted successfully"},
@@ -42,6 +65,31 @@ class SubmitQuestionnaireView(APIView):
             return self._handle_error("Object does not exist", str(e))
         except Exception as e:
             return self._handle_error("Error processing request", str(e))
+
+    def _save_subject(
+        self,
+        subject_code: str,
+        subject_name: str,
+        model_settings: ModelSettings,
+        student: Student,
+        teacher: Teacher,
+    ) -> Subject:
+        default_attributes = {}
+
+        if subject_name:
+            default_attributes["name"] = subject_name
+        default_attributes["model_settings"] = model_settings
+
+        subject, _ = Subject.objects.get_or_create(
+            code=subject_code,
+            defaults=default_attributes,
+        )
+
+        subject.students.add(student)
+        subject.teachers.add(teacher)
+        subject.save()
+
+        return subject
 
     def _save_items_and_answers(
         self, questionnaire: Questionnaire, items_data: list, student: Student
@@ -73,18 +121,18 @@ class SubmitQuestionnaireView(APIView):
         email: str,
         questionnaire: Questionnaire,
         student: Student,
+        model_settings: ModelSettings,
     ) -> None:
         try:
-            openai_api_key: str = settings.OPENAI_API_KEY
             feedbacks, correct_count_answers = self._check_answers(answers)
             self._save_result(answers, correct_count_answers, questionnaire, student)
             generate_formative_feedback.delay(
                 feedbacks,
                 content,
-                openai_api_key,
                 email,
                 questionnaire.title,
                 correct_count_answers,
+                model_settings.id,
             )
         except Exception as e:
             raise FeedbackGenerationException("Error generating feedback", str(e))

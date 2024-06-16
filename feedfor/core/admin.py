@@ -7,6 +7,7 @@ from core.models import (
     Result,
     ModelSettings,
     Teacher,
+    Subject,
 )
 
 
@@ -25,7 +26,7 @@ class StudentAdmin(admin.ModelAdmin):
 
 @admin.register(Questionnaire)
 class QuestionnaireAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "content", "created_at", "external_id")
+    list_display = ("id", "title", "content", "external_id", "subject", "created_at")
     search_fields = ("title", "external_id")
     list_filter = ("created_at",)
     filter_horizontal = ("students",)
@@ -103,6 +104,7 @@ class ModelSettingsAdmin(admin.ModelAdmin):
         "get_truncated_system_content",
         "max_tokens",
         "temperature",
+        "created_at",
     )
     search_fields = (
         "id",
@@ -112,6 +114,7 @@ class ModelSettingsAdmin(admin.ModelAdmin):
         "max_tokens",
         "temperature",
     )
+    list_filter = ("created_at",)
 
     def get_truncated_system_content(self, obj):
         return truncate_text(obj.system_content, max_length=40)
@@ -124,3 +127,14 @@ class TeacherAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "email", "created_at")
     search_fields = ("id", "name", "email")
     list_filter = ("created_at",)
+
+
+@admin.register(Subject)
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "code", "model_settings", "created_at")
+    search_fields = ("id", "name", "email")
+    list_filter = ("created_at",)
+    filter_horizontal = (
+        "students",
+        "teachers",
+    )

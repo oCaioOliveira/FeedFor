@@ -12,6 +12,42 @@ class Student(models.Model):
         return self.email
 
 
+class Teacher(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    email = models.EmailField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.email
+
+
+class ModelSettings(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    openai_api_key = models.CharField(max_length=255, blank=False, null=False)
+    model = models.CharField(max_length=255, blank=False, null=False)
+    system_content = models.TextField(blank=False, null=False)
+    max_tokens = models.IntegerField(blank=False, null=False)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Subject(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, blank=True, null=True)
+    code = models.CharField(max_length=255, blank=False, null=False, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    model_settings = models.ForeignKey(
+        ModelSettings, related_name="subjects", on_delete=models.RESTRICT
+    )
+    students = models.ManyToManyField(Student, related_name="subjects")
+    teachers = models.ManyToManyField(Teacher, related_name="subjects")
+
+    def __str__(self):
+        return f"{self.name} - {self.code}"
+
+
 class Questionnaire(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=255, blank=False, null=False)
@@ -19,6 +55,9 @@ class Questionnaire(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     external_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
 
+    subject = models.ForeignKey(
+        Subject, related_name="questionnaires", on_delete=models.RESTRICT
+    )
     students = models.ManyToManyField(Student, related_name="questionnaires")
 
     def __str__(self):
@@ -68,22 +107,3 @@ class Result(models.Model):
 
     def __str__(self):
         return f"{self.id}"
-
-
-class ModelSettings(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    openai_api_key = models.CharField(max_length=255, blank=False, null=False)
-    model = models.CharField(max_length=255, blank=False, null=False)
-    system_content = models.TextField(blank=False, null=False)
-    max_tokens = models.IntegerField(blank=False, null=False)
-    temperature = models.DecimalField(max_digits=5, decimal_places=2)
-
-
-class Teacher(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    email = models.EmailField(unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.email
