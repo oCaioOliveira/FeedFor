@@ -68,7 +68,7 @@ class Item(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     question = models.TextField(blank=False, null=False)
     subcontent = models.CharField(max_length=255, blank=False, null=False)
-    correct_answer = models.TextField(blank=False, null=False)
+    correct_answer = models.JSONField(blank=False, null=False, default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 
     questionnaire = models.ForeignKey(
@@ -81,9 +81,10 @@ class Item(models.Model):
 
 class Answer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    text = models.TextField(blank=False, null=False)
+    text = models.JSONField(blank=False, null=False, default=list)
     feedback_explanation = models.TextField(blank=True, null=True)
     feedback_improve_suggestions = models.TextField(blank=True, null=True)
+    correct = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     students = models.ManyToManyField(Student, related_name="answers")
