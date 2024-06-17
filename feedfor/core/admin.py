@@ -61,10 +61,11 @@ class AnswerAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "get_truncated_text",
+        "correct",
         "get_truncated_feedback_explanation",
         "get_truncated_feedback_improve_suggestions",
-        "created_at",
         "item",
+        "created_at",
     )
     search_fields = ("text", "feedback_explanation", "feedback_improve_suggestions")
     list_filter = ("created_at", "item")
