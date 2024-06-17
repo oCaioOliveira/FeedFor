@@ -26,6 +26,10 @@
             <strong>Total de respostas corretas:</strong>
             {{ correct_count_answers }}/{{ feedbacks|length }}
         </p>
+        <p>
+            <strong>Email:</strong>
+            {{ student_email }}
+        </p>
         {% for feedback in feedbacks %}
         <div class="feedback">
             <h2>Questão: {{ feedback.question }}</h2>
@@ -38,15 +42,11 @@
             <p><strong>Resposta correta:</strong></p>
             <p>{{ feedback.correct_answer }}</p>
             {% endif %} {% if feedback.explanation %}
-            <p>
-                <strong>Explicação:</strong>
-                {{ feedback.explanation }}
-            </p>
+            <p><strong>Explicação:</strong></p>
+            <p>{{ feedback.explanation }}</p>
             {% endif %} {% if feedback.improve_suggestions %}
-            <p>
-                <strong>Sugestão de Melhora:</strong>
-                {{ feedback.improve_suggestions }}
-            </p>
+            <p><strong>Sugestão de Melhora:</strong></p>
+            <p>{{ feedback.improve_suggestions }}</p>
             {% endif %}
         </div>
         {% endfor %}
