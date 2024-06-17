@@ -43,6 +43,22 @@ def send_formative_feedback_email(
 
 
 @shared_task
+def send_email_with_report(subject, body, recipient_emails, report_file):
+    email = EmailMessage(
+        subject,
+        body,
+        os.getenv("EMAIL_HOST_USER", ""),
+        to=recipient_emails,
+    )
+    email.attach(
+        "relatorio.xlsx",
+        report_file,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    email.send()
+
+
+@shared_task
 def generate_formative_feedback(
     feedbacks: List[Dict[str, Union[str, bool, int]]],
     questionnaire_content: str,
@@ -80,10 +96,18 @@ def generate_feedback_details(
     for feedback in feedbacks:
         if feedback["correct"]:
             feedback_text = "Bom trabalho! Você acertou a questão."
+            save_correct_answer(feedback["answer_id"])
         elif not (feedback["explanation"] and feedback["improve_suggestions"]):
-            feedback_text = generate_openai_feedback(
-                feedback, questionnaire_content, model_settings
-            )
+            if len(feedback["answer"]) > 1 or len(feedback["correct_answer"]) > 1:
+                prompt = create_prompt(
+                    feedback, questionnaire_content, model_settings.max_tokens
+                )
+            else:
+                prompt = create_prompt_multiple_answers(
+                    feedback, questionnaire_content, model_settings.max_tokens
+                )
+
+            feedback_text = generate_openai_feedback(model_settings, prompt)
 
             (
                 feedback["explanation"],
@@ -121,25 +145,55 @@ def format_feedback(
     return explanation, suggestions
 
 
-def generate_openai_feedback(
+def create_prompt(
     feedback: Dict[str, Union[str, bool, int]],
     questionnaire_content: str,
-    model_settings: ModelSettings,
+    max_tokens: int,
 ) -> str:
-    max_tokens = model_settings.max_tokens
-    prompt = (
+    return (
         f"Questão: {feedback['question']}\n"
-        f"Resposta do aluno: {feedback['answer']}\n"
-        f"Resposta correta: {feedback['correct_answer']}\n"
+        f"Resposta do aluno: {feedback['answer'][0]}\n"
+        f"Gabarito: {feedback['correct_answer'][0]}\n"
         f"Conteúdo do questionário: {questionnaire_content}\n"
         f"Subconteúdo da questão: {feedback['subcontent']}\n"
         "Explique por que a resposta do aluno está incorreta e qual deveria ser a resposta certa.\n"
         "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto.\n"
         "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
         "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado.\n"
+        f"Limite sua resposta a {(max_tokens - 100) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
+    )
+
+
+def create_prompt_multiple_answers(
+    feedback: Dict[str, Union[str, bool, int]],
+    questionnaire_content: str,
+    max_tokens: int,
+) -> str:
+    correct_questions = []
+
+    for answer, correct in feedback.result.items():
+        if correct:
+            correct_questions.append(feedback.question)
+
+    return (
+        f"Questão: {feedback['question']}\n"(
+            f"Respostas certas do aluno: {correct_questions}\n"
+        )
+        if correct_questions
+        else ""
+        f"Respostas erradas do aluno: {feedback['wrong_answers']}\n"
+        f"Gabarito: {feedback['correct_answer']}\n"
+        f"Conteúdo do questionário: {questionnaire_content}\n"
+        f"Subconteúdo da questão: {feedback['subcontent']}\n"
+        "Te enviei respostas que o aluno acertou e errou junto com o gabarito, explique por que as respostas erradas estão incorretas e quais ou qual deveria ser a resposta certa.\n"
+        "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto, levando em conta o que ele errou e o que acertou.\n"
+        "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
+        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado.\n"
         f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
+
+def generate_openai_feedback(model_settings: ModelSettings, prompt: str) -> str:
     openai.api_key = model_settings.openai_api_key
 
     response = openai.ChatCompletion.create(
@@ -151,7 +205,7 @@ def generate_openai_feedback(
             },
             {"role": "user", "content": prompt},
         ],
-        max_tokens=max_tokens,
+        max_tokens=model_settings.max_tokens,
         temperature=float(model_settings.temperature),
     )
 
@@ -164,4 +218,11 @@ def save_feedback_to_answer(
     answer = Answer.objects.get(id=answer_id)
     answer.feedback_explanation = feedback_explanation
     answer.feedback_improve_suggestions = feedback_improve_suggestions
+    answer.correct = False
+    answer.save()
+
+
+def save_correct_answer(answer_id: int) -> None:
+    answer = Answer.objects.get(id=answer_id)
+    answer.correct = 1.0
     answer.save()
