@@ -14,9 +14,13 @@ from .models import (
     ModelSettings,
 )
 from typing import List, Dict, Union
-from .tasks import generate_formative_feedback
+from .tasks import generate_formative_feedback, send_email_with_report
 from .exceptions import FeedbackGenerationException
 from .utils import check_answers
+
+import pandas as pd
+import io
+import os
 
 
 class SendFeedbackView(APIView):
@@ -64,9 +68,9 @@ class SendFeedbackView(APIView):
             )
 
         except ObjectDoesNotExist as e:
-            return self._handle_error("Object does not exist", str(e))
+            return self._handle_error("Object does not exist.", str(e))
         except Exception as e:
-            return self._handle_error("Error processing request", str(e))
+            return self._handle_error("Error processing request.", str(e))
 
     def _save_subject(
         self,
@@ -181,10 +185,10 @@ class ResendFeedbackView(APIView):
                 {
                     "message": "Resending feedback.",
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return self._handle_error("Error resending feedback", str(e))
+            return self._handle_error("Error resending feedback.", str(e))
 
     def _set_list_recipient_emails(
         self,
@@ -237,6 +241,106 @@ class ResendFeedbackView(APIView):
                     questionnaire.subject.model_settings.id,
                     student_email,
                 )
+
+    def _handle_error(self, message: str, reason: str) -> Response:
+        return Response(
+            {"error_message": message, "reason": reason},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class SendReportView(APIView):
+    def post(self, request) -> Response:
+        try:
+            data = request.data
+            questionnaire_external_id: str = data.get("questionnaire_external_id")
+
+            questionnaire = Questionnaire.objects.get(
+                external_id=questionnaire_external_id
+            )
+
+            recipient_emails = list(
+                questionnaire.subject.teachers.values_list("email", flat=True)
+            )
+
+            report_file = self.generate_report(questionnaire)
+
+            subject = f"Relatório do Questionário {questionnaire.title}"
+            body = "Segue em anexo o relatório do questionário."
+
+            send_email_with_report.delay(
+                subject, body, recipient_emails, report_file.getvalue()
+            )
+
+            return Response(
+                {
+                    "message": "Sending report.",
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return self._handle_error("Error sending report.", str(e))
+
+    def generate_report(self, questionnaire):
+        students = questionnaire.students.all()
+        items = questionnaire.items.all()
+        results = Result.objects.filter(questionnaire=questionnaire)
+        answers = Answer.objects.filter(item__questionnaire=questionnaire)
+
+        data = []
+
+        for student in students:
+            student_data = {"Aluno": student.email}
+            for item in items:
+                student_answer = answers.filter(item=item, students=student).first()
+                if student_answer:
+                    student_data[item.question] = (
+                        "Correta"
+                        if not student_answer.feedback_explanation
+                        else "Incorreta"
+                    )
+                else:
+                    student_data[item.question] = "Sem Resposta"
+
+            student_results = results.filter(student=student).first()
+            student_score = student_results.score if student_results else 0
+            student_data["Pontuação"] = student_score
+
+            data.append(student_data)
+
+        df = pd.DataFrame(data)
+
+        question_stats_data = []
+        for item in items:
+            question = item.question
+            correct_count = (df[question] == "Correta").sum()
+            incorrect_count = (df[question] == "Incorreta").sum()
+            total_count = len(df)
+            correct_percentage = (correct_count / total_count) * 100
+            incorrect_percentage = (incorrect_count / total_count) * 100
+            question_stats_data.append(
+                {
+                    "Questão": question,
+                    "Corretas": correct_count,
+                    "Incorretas": incorrect_count,
+                    "Total": total_count,
+                    "Corretas %": correct_percentage,
+                    "Incorretas %": incorrect_percentage,
+                }
+            )
+
+        question_stats = pd.DataFrame(question_stats_data)
+
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Desempenho dos Alunos")
+            question_stats.to_excel(
+                writer, index=False, sheet_name="Estatísticas das Questões"
+            )
+
+        output.seek(0)
+
+        return output
 
     def _handle_error(self, message: str, reason: str) -> Response:
         return Response(
