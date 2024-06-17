@@ -10,10 +10,11 @@ import os
 
 @shared_task
 def send_formative_feedback_email(
-    email: str,
+    email: List[str],
     questionnaire_title: str,
     feedbacks: List[Dict[str, Union[str, bool, int]]],
     correct_count_answers: int,
+    student_email: str,
 ) -> None:
     try:
         html_string = render_to_string(
@@ -22,6 +23,7 @@ def send_formative_feedback_email(
                 "questionnaire_title": questionnaire_title,
                 "feedbacks": feedbacks,
                 "correct_count_answers": correct_count_answers,
+                "student_email": student_email,
             },
         )
         html = HTML(string=html_string)
@@ -29,9 +31,9 @@ def send_formative_feedback_email(
 
         email_message = EmailMessage(
             f"Feedback Formativo - {questionnaire_title}",
-            f'Olá, encontre em anexo o seu feedback formativo referente ao questionário: "{questionnaire_title}".',
+            f'Olá, \nEncontre em anexo o feedback relacionado ao email {student_email} referente ao questionário: "{questionnaire_title}".',
             os.getenv("EMAIL_HOST_USER", ""),
-            [email],
+            email,
         )
         email_message.attach("formative_feedback.pdf", pdf_file, "application/pdf")
         email_message.send()
@@ -44,10 +46,11 @@ def send_formative_feedback_email(
 def generate_formative_feedback(
     feedbacks: List[Dict[str, Union[str, bool, int]]],
     questionnaire_content: str,
-    email: str,
+    email: List[str],
     questionnaire_title: str,
     correct_count_answers: int,
     model_settings_id: str,
+    student_email: str,
 ) -> None:
     try:
         model_settings = ModelSettings.objects.get(id=model_settings_id)
@@ -60,6 +63,7 @@ def generate_formative_feedback(
             questionnaire_title,
             detailed_feedbacks,
             correct_count_answers,
+            student_email,
         )
 
     except Exception as e:
