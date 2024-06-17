@@ -13,19 +13,21 @@ from .models import (
     Subject,
     ModelSettings,
 )
+from typing import List, Dict, Union
 from .tasks import generate_formative_feedback
 from .exceptions import FeedbackGenerationException
+from .utils import check_answers
 
 
-class SubmitQuestionnaireView(APIView):
+class SendFeedbackView(APIView):
     def post(self, request) -> Response:
         try:
             data = request.data
             student_email: str = data.get("student_email")
             teacher_email: str = data.get("teacher_email")
-            title: str = data.get("title")
-            content: str = data.get("content")
-            external_id: str = data.get("external_id")
+            title: str = data.get("questionnaire_title")
+            content: str = data.get("questionnaire_content")
+            external_id: str = data.get("questionnaire_external_id")
             items_data: list = data.get("items", [])
             subject_name: str = data.get("subject_name")
             subject_code: str = data.get("subject_code")
@@ -57,7 +59,7 @@ class SubmitQuestionnaireView(APIView):
             )
 
             return Response(
-                {"message": "Questionnaire submitted successfully"},
+                {"message": "Questionnaire submitted successfully, sending feedback."},
                 status=status.HTTP_201_CREATED,
             )
 
@@ -124,44 +126,19 @@ class SubmitQuestionnaireView(APIView):
         model_settings: ModelSettings,
     ) -> None:
         try:
-            feedbacks, correct_count_answers = self._check_answers(answers)
+            feedbacks, correct_count_answers = check_answers(answers)
             self._save_result(answers, correct_count_answers, questionnaire, student)
             generate_formative_feedback.delay(
                 feedbacks,
                 content,
-                email,
+                [email],
                 questionnaire.title,
                 correct_count_answers,
                 model_settings.id,
+                email,
             )
         except Exception as e:
             raise FeedbackGenerationException("Error generating feedback", str(e))
-
-    def _check_answers(self, answers: list) -> tuple:
-        feedbacks = []
-        correct_count_answers = 0
-
-        for answer in answers:
-            correct = answer.item.correct_answer
-            student_answer = answer.text
-            is_correct = correct.strip().lower() == student_answer.strip().lower()
-
-            if is_correct:
-                correct_count_answers += 1
-
-            feedback = {
-                "question": answer.item.question,
-                "answer": student_answer,
-                "correct_answer": correct,
-                "correct": is_correct,
-                "subcontent": answer.item.subcontent,
-                "explanation": answer.feedback_explanation,
-                "improve_suggestions": answer.feedback_improve_suggestions,
-                "answer_id": answer.id,
-            }
-            feedbacks.append(feedback)
-
-        return feedbacks, correct_count_answers
 
     def _save_result(
         self,
@@ -172,6 +149,94 @@ class SubmitQuestionnaireView(APIView):
     ) -> None:
         score = (correct_count_answers / len(answers)) * 100
         Result.objects.create(score=score, questionnaire=questionnaire, student=student)
+
+    def _handle_error(self, message: str, reason: str) -> Response:
+        return Response(
+            {"error_message": message, "reason": reason},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+
+class ResendFeedbackView(APIView):
+    def post(self, request) -> Response:
+        try:
+            data = request.data
+            student_emails: List[str] = data.get("student_emails")
+            questionnaire_external_id: str = data.get("questionnaire_external_id")
+            feedback_recipient: Union[str, List[str]] = data.get("feedback_recipient")
+
+            questionnaire = Questionnaire.objects.get(
+                external_id=questionnaire_external_id
+            )
+
+            recipient_emails = self._set_list_recipient_emails(
+                student_emails, questionnaire, feedback_recipient
+            )
+
+            self._build_feedback_context(
+                student_emails, questionnaire, recipient_emails
+            )
+
+            return Response(
+                {
+                    "message": "Resending feedback.",
+                },
+                status=status.HTTP_201_CREATED,
+            )
+        except Exception as e:
+            return self._handle_error("Error resending feedback", str(e))
+
+    def _set_list_recipient_emails(
+        self,
+        student_emails: List[str],
+        questionnaire: Questionnaire,
+        feedback_recipient: Union[str, List[str]],
+    ) -> Dict[str, List[str]]:
+        recipient_emails = {}
+
+        if feedback_recipient == "teachers" or feedback_recipient == "both":
+            recipient_emails["teachers"] = list(
+                questionnaire.subject.teachers.values_list("email", flat=True)
+            )
+        if feedback_recipient == "students" or feedback_recipient == "both":
+            recipient_emails["students"] = student_emails
+        if type(feedback_recipient) == list:
+            recipient_emails["others"] = feedback_recipient
+
+        return recipient_emails
+
+    def _build_feedback_context(
+        self,
+        student_emails: List[str],
+        questionnaire: Questionnaire,
+        recipient_emails: Dict[str, List[str]],
+    ):
+        student_receive_email = len(recipient_emails.get("students", [])) > 0
+        recipient_emails_without_student = recipient_emails.get(
+            "teachers", []
+        ) + recipient_emails.get("others", [])
+        for student_email in student_emails:
+            answers = list(
+                Answer.objects.filter(
+                    item__questionnaire__id=questionnaire.id,
+                    students__email=student_email,
+                )
+            )
+            if len(answers) > 0:
+                feedbacks, correct_count_answers = check_answers(answers)
+                generate_formative_feedback.delay(
+                    feedbacks,
+                    questionnaire.content,
+                    (
+                        recipient_emails_without_student + [student_email]
+                        if student_receive_email
+                        else recipient_emails_without_student
+                    ),
+                    questionnaire.title,
+                    correct_count_answers,
+                    questionnaire.subject.model_settings.id,
+                    student_email,
+                )
 
     def _handle_error(self, message: str, reason: str) -> Response:
         return Response(
