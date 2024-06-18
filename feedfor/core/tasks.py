@@ -94,10 +94,10 @@ def generate_feedback_details(
     detailed_feedbacks = []
 
     for feedback in feedbacks:
-        if feedback["correct"]:
-            feedback_text = "Bom trabalho! Você acertou a questão."
-            save_correct_answer(feedback["answer_id"])
-        elif not (feedback["explanation"] and feedback["improve_suggestions"]):
+        if (
+            not (feedback["explanation"] and feedback["improve_suggestions"])
+            and not feedback["correct"]
+        ):
             if len(feedback["answer"]) > 1 or len(feedback["correct_answer"]) > 1:
                 prompt = create_prompt(
                     feedback, questionnaire_content, model_settings.max_tokens
@@ -171,24 +171,22 @@ def create_prompt_multiple_answers(
 ) -> str:
     correct_questions = []
 
-    for answer, correct in feedback.result.items():
+    for answer, correct in feedback["result"].items():
         if correct:
-            correct_questions.append(feedback.question)
+            correct_questions.append(feedback["question"])
 
     return (
-        f"Questão: {feedback['question']}\n"(
-            f"Respostas certas do aluno: {correct_questions}\n"
-        )
-        if correct_questions
-        else ""
-        f"Respostas erradas do aluno: {feedback['wrong_answers']}\n"
+        f"Questão: {feedback['question']}\n"
+        f"Respostas do aluno:\n"
+        f"- Certas: {correct_questions if correct_questions else 'Nenhuma'}\n"
+        f"- Erradas: {feedback['wrong_answers']}\n"
         f"Gabarito: {feedback['correct_answer']}\n"
         f"Conteúdo do questionário: {questionnaire_content}\n"
         f"Subconteúdo da questão: {feedback['subcontent']}\n"
-        "Te enviei respostas que o aluno acertou e errou junto com o gabarito, explique por que as respostas erradas estão incorretas e quais ou qual deveria ser a resposta certa.\n"
-        "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto, levando em conta o que ele errou e o que acertou.\n"
-        "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
-        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado.\n"
+        "A seguir, forneça um feedback detalhado sobre as respostas do aluno, divida sua resposta em duas seções:\n"
+        "'Explicação:' Explique por que cada resposta errada está incorreta e qual deveria ser a resposta correta.\n"
+        "'Sugestões de Aperfeiçoamento:' Sugira o que o aluno pode estudar para melhorar nesse assunto, considerando as respostas corretas e incorretas.\n"
+        "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado.\n"
         f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
@@ -218,11 +216,4 @@ def save_feedback_to_answer(
     answer = Answer.objects.get(id=answer_id)
     answer.feedback_explanation = feedback_explanation
     answer.feedback_improve_suggestions = feedback_improve_suggestions
-    answer.correct = False
-    answer.save()
-
-
-def save_correct_answer(answer_id: int) -> None:
-    answer = Answer.objects.get(id=answer_id)
-    answer.correct = 1.0
     answer.save()
