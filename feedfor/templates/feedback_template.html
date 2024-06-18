@@ -38,13 +38,14 @@
             <p class="correct-answer">✔ {{ answer }}</p>
             {% else %}
             <p class="incorrect-answer">✘ {{ answer }}</p>
+            {% endif %} {% endfor %} {% if not feedback.correct %}
             <p><strong>Resposta(s) correta(s):</strong></p>
             <ul>
                 {% for correct_answer in feedback.correct_answer %}
                 <li>{{ correct_answer }}</li>
                 {% endfor %}
             </ul>
-            {% endif %} {% endfor %} {% if feedback.explanation %}
+            {% endif %} {% if feedback.explanation %}
             <p><strong>Explicação:</strong></p>
             <p>{{ feedback.explanation }}</p>
             {% endif %} {% if feedback.improve_suggestions %}
