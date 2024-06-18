@@ -302,7 +302,9 @@ class SendReportView(APIView):
                 else:
                     student_data[item.question] = 0.0
 
-            student_results = results.filter(student=student).last()
+            student_results = (
+                results.filter(student=student).order_by("-created_at").first()
+            )
             student_score = student_results.score if student_results else 0
             student_data["Pontuação"] = student_score
 
