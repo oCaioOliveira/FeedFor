@@ -131,7 +131,7 @@ class SendFeedbackView(APIView):
     ) -> None:
         try:
             feedbacks, correct_count_answers = check_answers(answers)
-            self._save_result(answers, correct_count_answers, questionnaire, student)
+            self._save_result(feedbacks, questionnaire, student)
             generate_formative_feedback.delay(
                 feedbacks,
                 content,
@@ -146,12 +146,16 @@ class SendFeedbackView(APIView):
 
     def _save_result(
         self,
-        answers: list,
-        correct_count_answers: int,
+        feedbacks: List[Dict[str, Union[str, bool, int]]],
         questionnaire: Questionnaire,
         student: Student,
     ) -> None:
-        score = (correct_count_answers / len(answers)) * 100
+        total_score = 0
+        total_questions = 0
+        for feedback in feedbacks:
+            total_score += feedback["score"]
+            total_questions += 1
+        score = (total_score) * 100 / total_questions
         Result.objects.create(score=score, questionnaire=questionnaire, student=student)
 
     def _handle_error(self, message: str, reason: str) -> Response:
@@ -294,15 +298,11 @@ class SendReportView(APIView):
             for item in items:
                 student_answer = answers.filter(item=item, students=student).first()
                 if student_answer:
-                    student_data[item.question] = (
-                        "Correta"
-                        if not student_answer.feedback_explanation
-                        else "Incorreta"
-                    )
+                    student_data[item.question] = student_answer.correct
                 else:
-                    student_data[item.question] = "Sem Resposta"
+                    student_data[item.question] = 0.0
 
-            student_results = results.filter(student=student).first()
+            student_results = results.filter(student=student).last()
             student_score = student_results.score if student_results else 0
             student_data["Pontuação"] = student_score
 
