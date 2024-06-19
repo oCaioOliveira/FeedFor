@@ -3,8 +3,8 @@ from celery import shared_task
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from weasyprint import HTML
-from .models import Answer, ModelSettings
-import openai
+from .models import Answer, AssistantSettings
+from openai import OpenAI
 import os
 
 
@@ -65,13 +65,13 @@ def generate_formative_feedback(
     email: List[str],
     questionnaire_title: str,
     correct_count_answers: int,
-    model_settings_id: str,
+    assistant_settings_id: str,
     student_email: str,
 ) -> None:
     try:
-        model_settings = ModelSettings.objects.get(id=model_settings_id)
+        assistant_settings = AssistantSettings.objects.get(id=assistant_settings_id)
         detailed_feedbacks = generate_feedback_details(
-            feedbacks, questionnaire_content, model_settings
+            feedbacks, questionnaire_content, assistant_settings
         )
 
         send_formative_feedback_email.delay(
@@ -89,7 +89,7 @@ def generate_formative_feedback(
 def generate_feedback_details(
     feedbacks: List[Dict[str, Union[str, bool, int]]],
     questionnaire_content: str,
-    model_settings: ModelSettings,
+    assistant_settings: AssistantSettings,
 ) -> List[Dict[str, Union[str, bool, int]]]:
     detailed_feedbacks = []
 
@@ -99,15 +99,17 @@ def generate_feedback_details(
             and not feedback["correct"]
         ):
             if len(feedback["answer"]) > 1 or len(feedback["correct_answer"]) > 1:
-                prompt = create_prompt(
-                    feedback, questionnaire_content, model_settings.max_tokens
+                prompt = create_prompt_multiple_answers(
+                    feedback,
+                    questionnaire_content,
                 )
             else:
-                prompt = create_prompt_multiple_answers(
-                    feedback, questionnaire_content, model_settings.max_tokens
+                prompt = create_prompt(
+                    feedback,
+                    questionnaire_content,
                 )
 
-            feedback_text = generate_openai_feedback(model_settings, prompt)
+            feedback_text = generate_openai_feedback(assistant_settings, prompt)
 
             (
                 feedback["explanation"],
@@ -148,7 +150,6 @@ def format_feedback(
 def create_prompt(
     feedback: Dict[str, Union[str, bool, int]],
     questionnaire_content: str,
-    max_tokens: int,
 ) -> str:
     return (
         f"Questão: {feedback['question']}\n"
@@ -160,14 +161,12 @@ def create_prompt(
         "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto.\n"
         "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
         "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
-        f"Limite sua resposta a {(max_tokens - 100) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
 
 def create_prompt_multiple_answers(
     feedback: Dict[str, Union[str, bool, int]],
     questionnaire_content: str,
-    max_tokens: int,
 ) -> str:
     correct_answers = []
 
@@ -187,9 +186,9 @@ def create_prompt_multiple_answers(
     if correct_answers == "Nenhuma":
         description = "O aluno não acertou nenhuma resposta. Explique o motivo das respostas estarem incorretas."
     elif wrong_answers == "Nenhuma":
-        description = "O aluno acertou todas as respostas que tentou. Porém, faltaram alguma(s) alternativa(s) para ele acertar a questão completamente, identifique quais são os gaps de conhecimento verificando as questões do gabarito e explique o que o aluno pode estudar para melhorar nesse assunto."
+        description = "O aluno acertou todas as respostas que tentou. Porém, faltaram alguma(s) alternativa(s) para ele acertar a questão completamente, identifique o que faltou para o aluno alcançar o gabarito."
     else:
-        description = "O aluno acertou algumas respostas e errou outras. Explique o motivo das respostas erradas estarem incorretas e sugira o que o aluno pode estudar para melhorar nesse assunto."
+        description = "O aluno acertou algumas respostas e errou outras. Explique o motivo das respostas erradas estarem incorretas."
 
     return (
         f"Questão: {feedback['question']}\n"
@@ -203,27 +202,41 @@ def create_prompt_multiple_answers(
         f"'Explicação:' {description}\n"
         "'Sugestões de Aperfeiçoamento:' Sugira o que o aluno pode estudar para melhorar nesse assunto, considerando as suas respostas, o conteúdo e o subconteúdo da questão.\n"
         "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
-        f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
 
-def generate_openai_feedback(model_settings: ModelSettings, prompt: str) -> str:
-    openai.api_key = model_settings.openai_api_key
+def generate_openai_feedback(assistant_settings: AssistantSettings, prompt: str) -> str:
+    client = OpenAI(api_key=assistant_settings.openai_api_key)
 
-    response = openai.ChatCompletion.create(
-        model=model_settings.model,
-        messages=[
-            {
-                "role": "system",
-                "content": model_settings.system_content,
-            },
-            {"role": "user", "content": prompt},
-        ],
-        max_tokens=model_settings.max_tokens,
-        temperature=float(model_settings.temperature),
+    assistant = client.beta.assistants.retrieve(assistant_settings.assistant_id)
+
+    thread = client.beta.threads.create()
+
+    message = client.beta.threads.messages.create(
+        thread_id=thread.id,
+        role="user",
+        content=prompt,
     )
 
-    return response.choices[0].message["content"].strip()
+    _ = client.beta.threads.runs.create_and_poll(
+        thread_id=thread.id,
+        assistant_id=assistant.id,
+        instructions=(
+            "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
+            f"Limite sua resposta a {(assistant_settings.max_completion_tokens - 50) if assistant_settings.max_completion_tokens > 100 else assistant_settings.max_completion_tokens} tokens, responda sem exceder esse limite."
+        ),
+        max_completion_tokens=assistant_settings.max_completion_tokens,
+    )
+
+    messages = client.beta.threads.messages.list(thread_id=thread.id)
+
+    first_message_content = None
+    for message in messages.data:
+        if message.content:
+            first_message_content = message.content[0].text.value
+            break
+
+    return first_message_content
 
 
 def save_feedback_to_answer(
