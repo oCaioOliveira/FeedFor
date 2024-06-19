@@ -12,7 +12,7 @@ from .models import (
     Result,
     Teacher,
     Subject,
-    ModelSettings,
+    AssistantSettings,
 )
 from typing import List, Dict, Union
 from .tasks import generate_formative_feedback, send_email_with_report
@@ -47,15 +47,17 @@ class SendFeedbackView(APIView):
                 items_data: list = data.get("items", [])
                 subject_name: str = data.get("subject_name")
                 subject_code: str = data.get("subject_code")
-                model_settings_id: str = data.get("model_settings_id")
+                assistant_id: str = data.get("assistant_id")
 
                 student, _ = Student.objects.get_or_create(email=student_email)
                 teacher, _ = Teacher.objects.get_or_create(email=teacher_email)
 
-                model_settings = ModelSettings.objects.get(id=model_settings_id)
+                assistant_settings = AssistantSettings.objects.get(
+                    assistant_id=assistant_id
+                )
 
                 subject = self._save_subject(
-                    subject_code, subject_name, model_settings, student, teacher
+                    subject_code, subject_name, assistant_settings, student, teacher
                 )
 
                 questionnaire, _ = Questionnaire.objects.get_or_create(
@@ -78,7 +80,7 @@ class SendFeedbackView(APIView):
                     student_email,
                     questionnaire,
                     student,
-                    model_settings,
+                    assistant_settings,
                 )
 
                 return Response(
@@ -99,7 +101,7 @@ class SendFeedbackView(APIView):
         self,
         subject_code: str,
         subject_name: str,
-        model_settings: ModelSettings,
+        assistant_settings: AssistantSettings,
         student: Student,
         teacher: Teacher,
     ) -> Subject:
@@ -107,7 +109,7 @@ class SendFeedbackView(APIView):
 
         if subject_name:
             default_attributes["name"] = subject_name
-        default_attributes["model_settings"] = model_settings
+        default_attributes["assistant_settings"] = assistant_settings
 
         subject, _ = Subject.objects.get_or_create(
             code=subject_code,
@@ -150,7 +152,7 @@ class SendFeedbackView(APIView):
         email: str,
         questionnaire: Questionnaire,
         student: Student,
-        model_settings: ModelSettings,
+        assistant_settings: AssistantSettings,
     ) -> None:
         try:
             feedbacks, correct_count_answers = check_answers(answers)
@@ -161,7 +163,7 @@ class SendFeedbackView(APIView):
                 [email],
                 questionnaire.title,
                 correct_count_answers,
-                model_settings.id,
+                assistant_settings.id,
                 email,
             )
         except Exception as e:
@@ -275,7 +277,7 @@ class ResendFeedbackView(APIView):
                     ),
                     questionnaire.title,
                     correct_count_answers,
-                    questionnaire.subject.model_settings.id,
+                    questionnaire.subject.assistant_settings.id,
                     student_email,
                 )
 
