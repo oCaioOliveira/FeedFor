@@ -159,7 +159,7 @@ def create_prompt(
         "Explique por que a resposta do aluno está incorreta e qual deveria ser a resposta certa.\n"
         "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto.\n"
         "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
-        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado.\n"
+        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
         f"Limite sua resposta a {(max_tokens - 100) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
@@ -169,24 +169,36 @@ def create_prompt_multiple_answers(
     questionnaire_content: str,
     max_tokens: int,
 ) -> str:
-    correct_questions = []
+    correct_answers = []
 
     for answer, correct in feedback["result"].items():
         if correct:
-            correct_questions.append(feedback["question"])
+            correct_answers.append(feedback["question"])
+
+    correct_answers = (
+        ", ".join(correct_answers) if len(correct_answers) > 0 else "Nenhuma"
+    )
+    wrong_answers = (
+        ", ".join(feedback["wrong_answers"])
+        if feedback.get("wrong_answers")
+        else "Nenhuma"
+    )
 
     return (
         f"Questão: {feedback['question']}\n"
         f"Respostas do aluno:\n"
-        f"- Certas: {correct_questions if correct_questions else 'Nenhuma'}\n"
-        f"- Erradas: {feedback['wrong_answers']}\n"
-        f"Gabarito: {feedback['correct_answer']}\n"
+        f"- Certas: {correct_answers}\n"
+        f"- Erradas: {wrong_answers}\n"
+        f"Gabarito: {', '.join(feedback['correct_answer'])}\n"
         f"Conteúdo do questionário: {questionnaire_content}\n"
         f"Subconteúdo da questão: {feedback['subcontent']}\n"
-        "A seguir, forneça um feedback detalhado sobre as respostas do aluno, divida sua resposta em duas seções:\n"
-        "'Explicação:' Explique por que cada resposta errada está incorreta e qual deveria ser a resposta correta.\n"
+        "A seguir, forneça um feedback detalhado sobre as respostas do aluno, dividido em duas seções:\n"
+        "'Explicação:' Explique por que cada resposta errada está incorreta, qual deveria ser a resposta correta e mencione se há respostas corretas faltando.\n"
+        "Ou seja, se o aluno escolheu uma resposta incorreta, explique por que está incorreta.\n"
+        "Se o aluno escolheu parcialmente as respostas corretas, identifique quais estão corretas e quais faltam ou porque estão incorretas.\n"
+        "Se o aluno escolheu apenas respostas corretas, identifique quais faltam e porque são importantes.\n"
         "'Sugestões de Aperfeiçoamento:' Sugira o que o aluno pode estudar para melhorar nesse assunto, considerando as respostas corretas e incorretas.\n"
-        "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado.\n"
+        "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
         f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
