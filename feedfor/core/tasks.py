@@ -184,6 +184,13 @@ def create_prompt_multiple_answers(
         else "Nenhuma"
     )
 
+    if correct_answers == "Nenhuma":
+        description = "O aluno não acertou nenhuma resposta. Explique o motivo das respostas estarem incorretas."
+    elif wrong_answers == "Nenhuma":
+        description = "O aluno acertou todas as respostas que tentou. Porém, faltaram alguma(s) alternativa(s) para ele acertar a questão completamente, identifique quais são os gaps de conhecimento verificando as questões do gabarito e explique o que o aluno pode estudar para melhorar nesse assunto."
+    else:
+        description = "O aluno acertou algumas respostas e errou outras. Explique o motivo das respostas erradas estarem incorretas e sugira o que o aluno pode estudar para melhorar nesse assunto."
+
     return (
         f"Questão: {feedback['question']}\n"
         f"Respostas do aluno:\n"
@@ -193,11 +200,8 @@ def create_prompt_multiple_answers(
         f"Conteúdo do questionário: {questionnaire_content}\n"
         f"Subconteúdo da questão: {feedback['subcontent']}\n"
         "A seguir, forneça um feedback detalhado sobre as respostas do aluno, dividido em duas seções:\n"
-        "'Explicação:' Explique por que cada resposta errada está incorreta, qual deveria ser a resposta correta e mencione se há respostas corretas faltando.\n"
-        "Ou seja, se o aluno escolheu uma resposta incorreta, explique por que está incorreta.\n"
-        "Se o aluno escolheu parcialmente as respostas corretas, identifique quais estão corretas e quais faltam ou porque estão incorretas.\n"
-        "Se o aluno escolheu apenas respostas corretas, identifique quais faltam e porque são importantes.\n"
-        "'Sugestões de Aperfeiçoamento:' Sugira o que o aluno pode estudar para melhorar nesse assunto, considerando as respostas corretas e incorretas.\n"
+        f"'Explicação:' {description}\n"
+        "'Sugestões de Aperfeiçoamento:' Sugira o que o aluno pode estudar para melhorar nesse assunto, considerando as suas respostas, o conteúdo e o subconteúdo da questão.\n"
         "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
         f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
