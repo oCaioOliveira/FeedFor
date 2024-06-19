@@ -33,19 +33,26 @@
         {% for feedback in feedbacks %}
         <div class="feedback">
             <h2>Questão: {{ feedback.question }}</h2>
-            <p><strong>Sua(s) resposta(s): </strong></p>
+            <p>
+                <strong
+                    >Sua{% if feedback.result|length == 1 %} resposta{% else %}s
+                    respostas{% endif %}:
+                </strong>
+            </p>
             {% for answer, correct in feedback.result.items %} {% if correct %}
             <p class="correct-answer">✔ {{ answer }}</p>
             {% else %}
             <p class="incorrect-answer">✘ {{ answer }}</p>
             {% endif %} {% endfor %} {% if not feedback.correct %}
-            <p><strong>Resposta(s) correta(s):</strong></p>
-            <ul>
-                {% for correct_answer in feedback.correct_answer %}
-                <li>{{ correct_answer }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %} {% if feedback.explanation %}
+            <p>
+                <strong
+                    >Resposta{% if feedback.correct_answer|length == 1 %}
+                    correta{% else %}s corretas{% endif %}:</strong
+                >
+            </p>
+            {% for correct_answer in feedback.correct_answer %}
+            <p>{{ correct_answer }}</p>
+            {% endfor %} {% endif %} {% if feedback.explanation %}
             <p><strong>Explicação:</strong></p>
             <p>{{ feedback.explanation }}</p>
             {% endif %} {% if feedback.improve_suggestions %}
