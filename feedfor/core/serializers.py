@@ -32,7 +32,7 @@ class SendFeedbackSerializer(serializers.Serializer):
     subject_code = serializers.CharField(max_length=255)
     subject_name = serializers.CharField(max_length=255, required=False)
     teacher_email = serializers.EmailField()
-    model_settings_id = serializers.UUIDField()
+    assistant_id = serializers.CharField(max_length=255)
     items = ItemSerializer(many=True)
 
 
