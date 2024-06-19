@@ -51,7 +51,10 @@ class ItemAdmin(admin.ModelAdmin):
     get_truncated_question.short_description = "Question"
 
     def get_truncated_correct_answer(self, obj):
-        return truncate_text(obj.question, max_length=40)
+        if type(obj.correct_answer) == list:
+            return truncate_text(obj.correct_answer[0], max_length=40)
+        else:
+            return truncate_text(obj.correct_answer, max_length=40)
 
     get_truncated_correct_answer.short_description = "Correct Answer"
 
@@ -72,7 +75,10 @@ class AnswerAdmin(admin.ModelAdmin):
     filter_horizontal = ("students",)
 
     def get_truncated_text(self, obj):
-        return truncate_text(obj.text, max_length=40)
+        if type(obj.text) == list:
+            return truncate_text(obj.text[0], max_length=40)
+        else:
+            return truncate_text(obj.text, max_length=40)
 
     get_truncated_text.short_description = "Text"
 
