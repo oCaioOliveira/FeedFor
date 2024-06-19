@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from .models import (
@@ -24,6 +25,8 @@ import os
 
 
 class SendFeedbackView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request) -> Response:
         try:
             data = request.data
@@ -166,6 +169,8 @@ class SendFeedbackView(APIView):
 
 
 class ResendFeedbackView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request) -> Response:
         try:
             data = request.data
@@ -254,6 +259,8 @@ class ResendFeedbackView(APIView):
 
 
 class SendReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def post(self, request) -> Response:
         try:
             data = request.data
