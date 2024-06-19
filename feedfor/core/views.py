@@ -18,6 +18,11 @@ from typing import List, Dict, Union
 from .tasks import generate_formative_feedback, send_email_with_report
 from .exceptions import FeedbackGenerationException
 from .utils import check_answers
+from .serializers import (
+    SendFeedbackSerializer,
+    ResendFeedbackSerializer,
+    SendReportSerializer,
+)
 
 import pandas as pd
 import io
@@ -28,52 +33,67 @@ class SendFeedbackView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request) -> Response:
-        try:
-            data = request.data
-            student_email: str = data.get("student_email")
-            teacher_email: str = data.get("teacher_email")
-            title: str = data.get("questionnaire_title")
-            content: str = data.get("questionnaire_content")
-            external_id: str = data.get("questionnaire_external_id")
-            items_data: list = data.get("items", [])
-            subject_name: str = data.get("subject_name")
-            subject_code: str = data.get("subject_code")
-            model_settings_id: str = data.get("model_settings_id")
+        serializer = SendFeedbackSerializer(data=request.data)
 
-            student, _ = Student.objects.get_or_create(email=student_email)
-            teacher, _ = Teacher.objects.get_or_create(email=teacher_email)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            try:
+                data = request.data
+                student_email: str = data.get("student_email")
+                teacher_email: str = data.get("teacher_email")
+                title: str = data.get("questionnaire_title")
+                content: str = data.get("questionnaire_content")
+                external_id: str = data.get("questionnaire_external_id")
+                items_data: list = data.get("items", [])
+                subject_name: str = data.get("subject_name")
+                subject_code: str = data.get("subject_code")
+                model_settings_id: str = data.get("model_settings_id")
 
-            model_settings = ModelSettings.objects.get(id=model_settings_id)
+                student, _ = Student.objects.get_or_create(email=student_email)
+                teacher, _ = Teacher.objects.get_or_create(email=teacher_email)
 
-            subject = self._save_subject(
-                subject_code, subject_name, model_settings, student, teacher
-            )
+                model_settings = ModelSettings.objects.get(id=model_settings_id)
 
-            questionnaire, _ = Questionnaire.objects.get_or_create(
-                external_id=external_id,
-                defaults={
-                    "content": content,
-                    "title": title,
-                    "subject": subject,
-                },
-            )
-            questionnaire.students.add(student)
+                subject = self._save_subject(
+                    subject_code, subject_name, model_settings, student, teacher
+                )
 
-            answers = self._save_items_and_answers(questionnaire, items_data, student)
+                questionnaire, _ = Questionnaire.objects.get_or_create(
+                    external_id=external_id,
+                    defaults={
+                        "content": content,
+                        "title": title,
+                        "subject": subject,
+                    },
+                )
+                questionnaire.students.add(student)
 
-            self._process_feedback(
-                answers, content, student_email, questionnaire, student, model_settings
-            )
+                answers = self._save_items_and_answers(
+                    questionnaire, items_data, student
+                )
 
-            return Response(
-                {"message": "Questionnaire submitted successfully, sending feedback."},
-                status=status.HTTP_201_CREATED,
-            )
+                self._process_feedback(
+                    answers,
+                    content,
+                    student_email,
+                    questionnaire,
+                    student,
+                    model_settings,
+                )
 
-        except ObjectDoesNotExist as e:
-            return self._handle_error("Object does not exist.", str(e))
-        except Exception as e:
-            return self._handle_error("Error processing request.", str(e))
+                return Response(
+                    {
+                        "message": "Questionnaire submitted successfully, sending feedback."
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
+
+            except ObjectDoesNotExist as e:
+                return self._handle_error("Object does not exist.", str(e))
+            except Exception as e:
+                return self._handle_error("Error processing request.", str(e))
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def _save_subject(
         self,
@@ -172,32 +192,40 @@ class ResendFeedbackView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request) -> Response:
-        try:
-            data = request.data
-            student_emails: List[str] = data.get("student_emails")
-            questionnaire_external_id: str = data.get("questionnaire_external_id")
-            feedback_recipient: Union[str, List[str]] = data.get("feedback_recipient")
+        serializer = ResendFeedbackSerializer(data=request.data)
 
-            questionnaire = Questionnaire.objects.get(
-                external_id=questionnaire_external_id
-            )
+        if serializer.is_valid():
+            data = serializer.validated_data
+            try:
+                data = request.data
+                student_emails: List[str] = data.get("student_emails")
+                questionnaire_external_id: str = data.get("questionnaire_external_id")
+                feedback_recipient: Union[str, List[str]] = data.get(
+                    "feedback_recipient"
+                )
 
-            recipient_emails = self._set_list_recipient_emails(
-                student_emails, questionnaire, feedback_recipient
-            )
+                questionnaire = Questionnaire.objects.get(
+                    external_id=questionnaire_external_id
+                )
 
-            self._build_feedback_context(
-                student_emails, questionnaire, recipient_emails
-            )
+                recipient_emails = self._set_list_recipient_emails(
+                    student_emails, questionnaire, feedback_recipient
+                )
 
-            return Response(
-                {
-                    "message": "Resending feedback.",
-                },
-                status=status.HTTP_200_OK,
-            )
-        except Exception as e:
-            return self._handle_error("Error resending feedback.", str(e))
+                self._build_feedback_context(
+                    student_emails, questionnaire, recipient_emails
+                )
+
+                return Response(
+                    {
+                        "message": "Resending feedback.",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except Exception as e:
+                return self._handle_error("Error recreating feedback.", str(e))
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def _set_list_recipient_emails(
         self,
@@ -262,35 +290,41 @@ class SendReportView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request) -> Response:
-        try:
-            data = request.data
-            questionnaire_external_id: str = data.get("questionnaire_external_id")
+        serializer = SendReportSerializer(data=request.data)
 
-            questionnaire = Questionnaire.objects.get(
-                external_id=questionnaire_external_id
-            )
+        if serializer.is_valid():
+            data = serializer.validated_data
+            try:
+                data = request.data
+                questionnaire_external_id: str = data.get("questionnaire_external_id")
 
-            recipient_emails = list(
-                questionnaire.subject.teachers.values_list("email", flat=True)
-            )
+                questionnaire = Questionnaire.objects.get(
+                    external_id=questionnaire_external_id
+                )
 
-            report_file = self.generate_report(questionnaire)
+                recipient_emails = list(
+                    questionnaire.subject.teachers.values_list("email", flat=True)
+                )
 
-            subject = f"Relatório do Questionário {questionnaire.title}"
-            body = "Segue em anexo o relatório do questionário."
+                report_file = self.generate_report(questionnaire)
 
-            send_email_with_report.delay(
-                subject, body, recipient_emails, report_file.getvalue()
-            )
+                subject = f"Relatório do Questionário {questionnaire.title}"
+                body = "Segue em anexo o relatório do questionário."
 
-            return Response(
-                {
-                    "message": "Sending report.",
-                },
-                status=status.HTTP_200_OK,
-            )
-        except Exception as e:
-            return self._handle_error("Error sending report.", str(e))
+                send_email_with_report.delay(
+                    subject, body, recipient_emails, report_file.getvalue()
+                )
+
+                return Response(
+                    {
+                        "message": "Sending report.",
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            except Exception as e:
+                return self._handle_error("Error creating report.", str(e))
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def generate_report(self, questionnaire):
         students = questionnaire.students.all()
@@ -322,18 +356,24 @@ class SendReportView(APIView):
         question_stats_data = []
         for item in items:
             question = item.question
-            correct_count = (df[question] == "Correta").sum()
-            incorrect_count = (df[question] == "Incorreta").sum()
+            correct_count = (df[question] == 1.0).sum()
+            incorrect_count = (df[question] == 0.0).sum()
+            parcial_correct_count = (
+                df[question].between(0.0, 1.0, inclusive="neither").sum()
+            )
             total_count = len(df)
             correct_percentage = (correct_count / total_count) * 100
             incorrect_percentage = (incorrect_count / total_count) * 100
+            parcial_correct_percentage = (parcial_correct_count / total_count) * 100
             question_stats_data.append(
                 {
                     "Questão": question,
                     "Corretas": correct_count,
+                    "Parcialmente Corretas": parcial_correct_count,
                     "Incorretas": incorrect_count,
                     "Total": total_count,
                     "Corretas %": correct_percentage,
+                    "Parcialmente Corretas %": parcial_correct_percentage,
                     "Incorretas %": incorrect_percentage,
                 }
             )
