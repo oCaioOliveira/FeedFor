@@ -5,7 +5,7 @@ from core.models import (
     Item,
     Answer,
     Result,
-    ModelSettings,
+    AssistantSettings,
     Teacher,
     Subject,
 )
@@ -102,31 +102,35 @@ class ResultAdmin(admin.ModelAdmin):
     list_filter = ("created_at", "score")
 
 
-@admin.register(ModelSettings)
-class ModelSettingsAdmin(admin.ModelAdmin):
+@admin.register(AssistantSettings)
+class AssistantSettingsAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "openai_api_key",
+        "name",
         "model",
-        "get_truncated_system_content",
-        "max_tokens",
+        "openai_api_key",
+        "assistant_id",
+        "get_truncated_system_content_instructions",
+        "max_completion_tokens",
         "temperature",
         "created_at",
     )
     search_fields = (
         "id",
         "openai_api_key",
+        "name",
+        "assistant_id",
         "model",
-        "system_content",
-        "max_tokens",
+        "system_content_instructions",
+        "max_completion_tokens",
         "temperature",
     )
     list_filter = ("created_at",)
 
-    def get_truncated_system_content(self, obj):
-        return truncate_text(obj.system_content, max_length=40)
+    def get_truncated_system_content_instructions(self, obj):
+        return truncate_text(obj.system_content_instructions, max_length=40)
 
-    get_truncated_system_content.short_description = "System Content"
+    get_truncated_system_content_instructions.short_description = "System Content"
 
 
 @admin.register(Teacher)
@@ -138,7 +142,7 @@ class TeacherAdmin(admin.ModelAdmin):
 
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "code", "model_settings", "created_at")
+    list_display = ("id", "name", "code", "assistant_settings", "created_at")
     search_fields = ("id", "name", "email")
     list_filter = ("created_at",)
     filter_horizontal = (
