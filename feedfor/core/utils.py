@@ -31,6 +31,9 @@ def check_answers(answers: list) -> tuple:
 
         score = max(number_of_correct_student_answers / total_correct, 0)
 
+        if number_of_correct_student_answers != len(correct_answers):
+            is_correct = False
+
         if is_correct:
             correct_count_answers += 1
 
