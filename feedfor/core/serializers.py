@@ -32,7 +32,7 @@ class SendFeedbackSerializer(serializers.Serializer):
     subject_code = serializers.CharField(max_length=255)
     subject_name = serializers.CharField(max_length=255, required=False)
     teacher_email = serializers.EmailField()
-    assistant_id = serializers.CharField(max_length=255)
+    chat_id = serializers.UUIDField()
     items = ItemSerializer(many=True)
 
 
