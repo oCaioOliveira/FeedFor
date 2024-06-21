@@ -3,7 +3,7 @@ from celery import shared_task
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from weasyprint import HTML
-from .models import Answer, AssistantSettings
+from .models import Answer, ChatSettings
 from openai import OpenAI
 import os
 
@@ -65,13 +65,13 @@ def generate_formative_feedback(
     email: List[str],
     questionnaire_title: str,
     correct_count_answers: int,
-    assistant_settings_id: str,
+    chat_settings_id: str,
     student_email: str,
 ) -> None:
     try:
-        assistant_settings = AssistantSettings.objects.get(id=assistant_settings_id)
+        chat_settings = ChatSettings.objects.get(id=chat_settings_id)
         detailed_feedbacks = generate_feedback_details(
-            feedbacks, questionnaire_content, assistant_settings
+            feedbacks, questionnaire_content, chat_settings
         )
 
         send_formative_feedback_email.delay(
@@ -89,7 +89,7 @@ def generate_formative_feedback(
 def generate_feedback_details(
     feedbacks: List[Dict[str, Union[str, bool, int]]],
     questionnaire_content: str,
-    assistant_settings: AssistantSettings,
+    chat_settings: ChatSettings,
 ) -> List[Dict[str, Union[str, bool, int]]]:
     detailed_feedbacks = []
 
@@ -98,18 +98,24 @@ def generate_feedback_details(
             not (feedback["explanation"] and feedback["improve_suggestions"])
             and not feedback["correct"]
         ):
+            simple_prompt = True
             if len(feedback["answer"]) > 1 or len(feedback["correct_answer"]) > 1:
                 prompt = create_prompt_multiple_answers(
                     feedback,
                     questionnaire_content,
+                    chat_settings.max_tokens,
                 )
+                simple_prompt = False
             else:
                 prompt = create_prompt(
                     feedback,
                     questionnaire_content,
+                    chat_settings.max_tokens,
                 )
 
-            feedback_text = generate_openai_feedback(assistant_settings, prompt)
+            feedback_text = generate_openai_feedback(
+                chat_settings, prompt, simple_prompt
+            )
 
             (
                 feedback["explanation"],
@@ -150,6 +156,7 @@ def format_feedback(
 def create_prompt(
     feedback: Dict[str, Union[str, bool, int]],
     questionnaire_content: str,
+    max_tokens: int,
 ) -> str:
     return (
         f"Questão: {feedback['question']}\n"
@@ -160,25 +167,27 @@ def create_prompt(
         "Explique por que a resposta do aluno está incorreta e qual deveria ser a resposta certa.\n"
         "Além disso, sugira o que o aluno pode estudar para melhorar nesse assunto.\n"
         "Divida sua resposta em duas seções: 'Explicação:' e 'Sugestões de Aperfeiçoamento:'.\n"
-        "Responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
+        "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
+        f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
 
 def create_prompt_multiple_answers(
     feedback: Dict[str, Union[str, bool, int]],
     questionnaire_content: str,
+    max_tokens: int,
 ) -> str:
     correct_answers = []
 
     for answer, correct in feedback["result"].items():
         if correct:
-            correct_answers.append(feedback["question"])
+            correct_answers.append(answer)
 
     correct_answers = (
-        ", ".join(correct_answers) if len(correct_answers) > 0 else "Nenhuma"
+        "\n".join(correct_answers) if len(correct_answers) > 0 else "Nenhuma"
     )
     wrong_answers = (
-        ", ".join(feedback["wrong_answers"])
+        "\n".join(feedback["wrong_answers"])
         if feedback.get("wrong_answers")
         else "Nenhuma"
     )
@@ -186,7 +195,7 @@ def create_prompt_multiple_answers(
     if correct_answers == "Nenhuma":
         description = "O aluno não acertou nenhuma resposta. Explique o motivo das respostas estarem incorretas."
     elif wrong_answers == "Nenhuma":
-        description = "O aluno acertou todas as respostas que tentou. Porém, faltaram alguma(s) alternativa(s) para ele acertar a questão completamente, identifique o que faltou para o aluno alcançar o gabarito."
+        description = "O aluno acertou toda(s) a(s) resposta(s) que marcou. Porém, faltaram alguma(s) alternativa(s) para ele acertar a questão completamente, identifique o que faltou para o aluno alcançar o gabarito."
     else:
         description = "O aluno acertou algumas respostas e errou outras. Explique o motivo das respostas erradas estarem incorretas."
 
@@ -202,41 +211,43 @@ def create_prompt_multiple_answers(
         f"'Explicação:' {description}\n"
         "'Sugestões de Aperfeiçoamento:' Sugira o que o aluno pode estudar para melhorar nesse assunto, considerando as suas respostas, o conteúdo e o subconteúdo da questão.\n"
         "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
+        f"Limite sua resposta a {(max_tokens - 50) if max_tokens > 100 else max_tokens} tokens, responda sem exceder esse limite."
     )
 
 
-def generate_openai_feedback(assistant_settings: AssistantSettings, prompt: str) -> str:
-    client = OpenAI(api_key=assistant_settings.openai_api_key)
+def generate_openai_feedback(
+    chat_settings: ChatSettings,
+    prompt: str,
+    simple_prompt: bool,
+) -> str:
+    client = OpenAI(api_key=chat_settings.openai_api_key)
 
-    assistant = client.beta.assistants.retrieve(assistant_settings.assistant_id)
-
-    thread = client.beta.threads.create()
-
-    message = client.beta.threads.messages.create(
-        thread_id=thread.id,
-        role="user",
-        content=prompt,
-    )
-
-    _ = client.beta.threads.runs.create_and_poll(
-        thread_id=thread.id,
-        assistant_id=assistant.id,
-        instructions=(
-            "Por favor, responda em texto simples, sem usar qualquer formatação como negrito, itálico ou sublinhado e sem usar tópicos, como * ou -.\n"
-            f"Limite sua resposta a {(assistant_settings.max_completion_tokens - 50) if assistant_settings.max_completion_tokens > 100 else assistant_settings.max_completion_tokens} tokens, responda sem exceder esse limite."
+    response = client.chat.completions.create(
+        model=(
+            chat_settings.principal_model
+            if simple_prompt
+            else chat_settings.special_model
         ),
-        max_completion_tokens=assistant_settings.max_completion_tokens,
+        messages=[
+            {
+                "role": "system",
+                "content": chat_settings.system_content_instructions,
+            },
+            {
+                "role": "user",
+                "content": prompt,
+            },
+        ],
+        temperature=float(chat_settings.temperature),
+        max_tokens=chat_settings.max_tokens,
+        top_p=float(chat_settings.top_p),
+        frequency_penalty=float(chat_settings.frequency_penalty),
+        presence_penalty=float(chat_settings.presence_penalty),
     )
 
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
+    message = response.choices[0].message.content
 
-    first_message_content = None
-    for message in messages.data:
-        if message.content:
-            first_message_content = message.content[0].text.value
-            break
-
-    return first_message_content
+    return message
 
 
 def save_feedback_to_answer(
