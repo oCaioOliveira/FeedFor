@@ -32,7 +32,7 @@
         </p>
         {% for feedback in feedbacks %}
         <div class="feedback">
-            <h2>Questão: {{ feedback.question }}</h2>
+            <h3>{{ forloop.counter }}. {{ feedback.question }}</h3>
             <p>
                 <strong
                     >Sua{% if feedback.result|length == 1 %} resposta{% else %}s
