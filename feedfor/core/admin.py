@@ -1,4 +1,7 @@
 from django.contrib import admin
+from django import forms
+from django_select2.forms import Select2Widget
+from django.conf import settings
 from core.models import (
     Student,
     Questionnaire,
@@ -102,8 +105,23 @@ class ResultAdmin(admin.ModelAdmin):
     list_filter = ("created_at", "score")
 
 
+class AssistantSettingsForm(forms.ModelForm):
+    model = forms.CharField(
+        widget=Select2Widget(
+            choices=[(choice, choice) for choice in settings.MODEL_CHOICES],
+            attrs={"data-tags": "true"},
+        ),
+    )
+
+    class Meta:
+        model = AssistantSettings
+        fields = "__all__"
+
+
 @admin.register(AssistantSettings)
 class AssistantSettingsAdmin(admin.ModelAdmin):
+    form = AssistantSettingsForm
+
     list_display = (
         "id",
         "name",
