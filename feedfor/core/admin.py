@@ -11,6 +11,7 @@ from core.models import (
     AssistantSettings,
     Teacher,
     Subject,
+    ChatSettings,
 )
 
 
@@ -151,6 +152,62 @@ class AssistantSettingsAdmin(admin.ModelAdmin):
     get_truncated_system_content_instructions.short_description = "System Content"
 
 
+class ChatSettingsForm(forms.ModelForm):
+    principal_model = forms.CharField(
+        widget=Select2Widget(
+            choices=[(choice, choice) for choice in settings.MODEL_CHOICES],
+            attrs={"data-tags": "true"},
+        ),
+    )
+    special_model = forms.CharField(
+        widget=Select2Widget(
+            choices=[(choice, choice) for choice in settings.MODEL_CHOICES],
+            attrs={"data-tags": "true"},
+        ),
+    )
+
+    class Meta:
+        model = ChatSettings
+        fields = "__all__"
+
+
+@admin.register(ChatSettings)
+class ChatSettingsAdmin(admin.ModelAdmin):
+    form = ChatSettingsForm
+
+    list_display = (
+        "id",
+        "principal_model",
+        "special_model",
+        "openai_api_key",
+        "get_truncated_system_content_instructions",
+        "max_tokens",
+        "temperature",
+        "top_p",
+        "frequency_penalty",
+        "presence_penalty",
+        "created_at",
+    )
+    search_fields = (
+        "id",
+        "openai_api_key",
+        "principal_model",
+        "special_model",
+        "system_content_instructions",
+        "max_tokens",
+        "top_p",
+        "frequency_penalty",
+        "presence_penalty",
+        "temperature",
+    )
+    list_filter = ("created_at",)
+
+    def get_truncated_system_content_instructions(self, obj):
+        return truncate_text(obj.system_content_instructions, max_length=40)
+
+    get_truncated_system_content_instructions.short_description = "System Content"
+
+
 @admin.register(Teacher)
 class TeacherAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "email", "created_at")
@@ -160,7 +217,7 @@ class TeacherAdmin(admin.ModelAdmin):
 
 @admin.register(Subject)
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "code", "assistant_settings", "created_at")
+    list_display = ("id", "name", "code", "chat_settings", "created_at")
     search_fields = ("id", "name", "email")
     list_filter = ("created_at",)
     filter_horizontal = (
