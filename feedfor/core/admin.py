@@ -8,7 +8,6 @@ from core.models import (
     Item,
     Answer,
     Result,
-    AssistantSettings,
     Teacher,
     Subject,
     ChatSettings,
@@ -104,52 +103,6 @@ class ResultAdmin(admin.ModelAdmin):
     list_display = ("id", "score", "created_at", "student", "questionnaire")
     search_fields = ("id", "score", "student", "questionnaire")
     list_filter = ("created_at", "score")
-
-
-class AssistantSettingsForm(forms.ModelForm):
-    model = forms.CharField(
-        widget=Select2Widget(
-            choices=[(choice, choice) for choice in settings.MODEL_CHOICES],
-            attrs={"data-tags": "true"},
-        ),
-    )
-
-    class Meta:
-        model = AssistantSettings
-        fields = "__all__"
-
-
-@admin.register(AssistantSettings)
-class AssistantSettingsAdmin(admin.ModelAdmin):
-    form = AssistantSettingsForm
-
-    list_display = (
-        "id",
-        "name",
-        "model",
-        "openai_api_key",
-        "assistant_id",
-        "get_truncated_system_content_instructions",
-        "max_completion_tokens",
-        "temperature",
-        "created_at",
-    )
-    search_fields = (
-        "id",
-        "openai_api_key",
-        "name",
-        "assistant_id",
-        "model",
-        "system_content_instructions",
-        "max_completion_tokens",
-        "temperature",
-    )
-    list_filter = ("created_at",)
-
-    def get_truncated_system_content_instructions(self, obj):
-        return truncate_text(obj.system_content_instructions, max_length=40)
-
-    get_truncated_system_content_instructions.short_description = "System Content"
 
 
 class ChatSettingsForm(forms.ModelForm):
