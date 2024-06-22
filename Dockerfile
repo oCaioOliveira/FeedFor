@@ -10,4 +10,6 @@ RUN chmod +x /code/entrypoint.sh
 
 COPY . .
 
+EXPOSE 8000
+
 ENTRYPOINT ["/code/entrypoint.sh"]
