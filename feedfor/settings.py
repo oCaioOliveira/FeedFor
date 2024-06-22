@@ -36,6 +36,7 @@ ALLOWED_HOSTS = [
     "feedfor.railway.internal",
     "localhost",
     ".0.0.0.0",
+    "https://feedfor-x5daakypma-rj.a.run.app",
 ]
 
 
