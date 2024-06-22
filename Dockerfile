@@ -5,11 +5,6 @@ WORKDIR /code
 COPY requirements.txt /code/
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY ./entrypoint.sh .
-RUN chmod +x /code/entrypoint.sh
+COPY . /code/
 
-COPY . .
-
-EXPOSE 8000
-
-ENTRYPOINT ["/code/entrypoint.sh"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
