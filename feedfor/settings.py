@@ -35,6 +35,7 @@ ALLOWED_HOSTS = [
     "feedfor-production.up.railway.app",
     "feedfor.railway.internal",
     "localhost",
+    ".0.0.0.0",
 ]
 
 
