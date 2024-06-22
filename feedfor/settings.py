@@ -87,7 +87,7 @@ DATABASES = {
         "NAME": "feedfordb",
         "USER": "feedfordbuser",
         "PASSWORD": "feedfordbpassword",
-        "HOST": "db",
+        "HOST": "feedfordb",
         "PORT": "5432",
     }
 }
