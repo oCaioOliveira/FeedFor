@@ -31,7 +31,11 @@ SECRET_KEY = "django-insecure-puix&h-x-gg#m!*n)q2rqq+0(5+d#^d1(72==p3zk02cw7skc#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "feedfor-production.up.railway.app",
+    "feedfor.railway.internal",
+    "localhost",
+]
 
 
 # Application definition
