@@ -9,10 +9,10 @@ services:
         ports:
             - "8000:8000"
         depends_on:
-            - db
+            - feedfordb
             - redis
 
-    db:
+    feedfordb:
         image: postgres:13
         environment:
             POSTGRES_DB: feedfordb
