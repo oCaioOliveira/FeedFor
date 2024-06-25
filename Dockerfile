@@ -1,5 +1,6 @@
 FROM python:3.9
 
+RUN apt-get update && apt-get install -y libpango-1.0-0
 WORKDIR /code
 
 COPY requirements.txt /code/
