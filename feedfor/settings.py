@@ -34,7 +34,7 @@ DEBUG = False
 ALLOWED_HOSTS = [
     "localhost",
     "0.0.0.0",
-    "https://feedfor-gxmp4sopfa-rj.a.run.app",
+    "https://feedfor-gxmp4sopfa-rj.a.run.app/",
 ]
 
 
