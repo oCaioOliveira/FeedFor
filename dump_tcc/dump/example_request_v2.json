@@ -1,0 +1,64 @@
+{
+    "questionnaire_title": "Metodologias Ágeis",
+    "questionnaire_content": "Metodologias Ágeis",
+    "questionnaire_external_id": "MA",
+    "student_email": "190085291@aluno.unb.br",
+    "subject_code": "FGA1234",
+    "subject_name": "Requisitos de Software",
+    "teacher_email": "190085291@aluno.unb.br",
+    "model_settings_id": "48fb89a1-1088-47c6-8244-ab95056491ac",
+    "items": [
+        {
+            "question": "Defina o que são requisitos funcionais e requisitos não funcionais em um projeto de software. Dê exemplos de cada tipo.",
+            "answer": [
+                "Requisitos funcionais são especificações que descrevem como o sistema deve se comportar, enquanto requisitos não funcionais são especificações que descrevem o que o sistema deve fazer. Exemplo de requisito funcional: 'O sistema deve responder a todas as requisições de login em menos de 2 segundos.' Exemplo de requisito não funcional: 'O sistema deve permitir que o usuário faça login usando um nome de usuário e senha.'"
+            ],
+            "subcontent": "Tipos de requisitos",
+            "correct_answer": [
+                "Requisitos funcionais são especificações que descrevem o que o sistema deve fazer, enquanto requisitos não funcionais especificam como o sistema deve se comportar. Exemplo de requisito funcional: 'O sistema deve permitir que o usuário faça login usando um nome de usuário e senha.' Exemplo de requisito não funcional: 'O sistema deve responder a todas as requisições de login em menos de 2 segundos.'"
+            ]
+        },
+        {
+            "question": "Explique o processo de elicitação de requisitos. Quais são as técnicas comuns utilizadas para elicitar requisitos de software?",
+            "answer": "A elicitação de requisitos é o processo de coletar informações sobre o que o sistema deve fazer a partir dos desenvolvedores. As técnicas comuns incluem brainstorming, planning, review e retrospectiva.",
+            "subcontent": "Elicitação de requisitos",
+            "correct_answer": "A elicitação de requisitos é o processo de coletar informações sobre o que o sistema deve fazer a partir dos stakeholders. As técnicas comuns incluem entrevistas, workshops, grupos focais, observações, prototipação e análise de documentos."
+        },
+        {
+            "question": "Descreva a importância da validação de requisitos no desenvolvimento de software. Como essa validação é realizada?",
+            "answer": "A validação de requisitos garante que os requisitos definidos são corretos, completos e atingíveis. Isso é feito por meio de revisões, inspeções, testes de protótipos e validação com os stakeholders.",
+            "subcontent": "Validação de requisitos",
+            "correct_answer": "A validação de requisitos é crucial para assegurar que os requisitos capturados são precisos e refletem as necessidades dos stakeholders. Isso é realizado através de técnicas como revisões de requisitos, inspeções, modelagem de protótipos e validação com os stakeholders."
+        },
+        {
+            "question": "O que são casos de uso e como eles ajudam na definição de requisitos de software? Dê um exemplo de um caso de uso.",
+            "answer": "Casos de uso são descrições das interações entre um usuário e um sistema para alcançar um objetivo específico. Eles ajudam a clarificar os requisitos funcionais do sistema. Exemplo: 'O usuário clica no botão de login e insere suas credenciais para acessar sua conta.'",
+            "subcontent": "Casos de uso",
+            "correct_answer": "Casos de uso são descrições das interações entre um ator (usuário ou outro sistema) e o sistema para alcançar um objetivo específico. Eles ajudam a definir os requisitos funcionais detalhadamente. Exemplo: 'O usuário seleciona o produto no catálogo, adiciona ao carrinho de compras e finaliza a compra inserindo suas informações de pagamento.'"
+        },
+        {
+            "question": "Explique o conceito de diagrama de classes na modelagem de requisitos. Qual é a sua importância?",
+            "answer": "O diagrama de classes é uma representação visual das classes e seus relacionamentos em um sistema. Ele é importante para entender a estrutura e as interações dentro do sistema.",
+            "subcontent": "Diagrama de classes",
+            "correct_answer": "O diagrama de classes é uma representação visual das classes, seus atributos, métodos e os relacionamentos entre elas em um sistema de software. Ele é fundamental para a modelagem de requisitos porque ajuda a identificar e organizar os componentes do sistema, facilitando a comunicação entre os desenvolvedores e os stakeholders."
+        },
+        {
+            "question": "Como a técnica de prototipação pode auxiliar na definição de requisitos? Quais são os benefícios dessa abordagem?",
+            "answer": "A prototipação permite criar versões preliminares do sistema para coletar feedback dos stakeholders. Benefícios incluem melhor entendimento dos requisitos, identificação precoce de problemas e aumento da satisfação do cliente.",
+            "subcontent": "Prototipação",
+            "correct_answer": "A prototipação envolve a criação de modelos preliminares do sistema para coletar feedback dos stakeholders. Os benefícios incluem uma melhor compreensão dos requisitos, identificação precoce de problemas e inconsistências, maior envolvimento dos stakeholders e aumento da satisfação do cliente devido à visualização antecipada do sistema."
+        },
+        {
+            "question": "O que é feito na cerimônia de revisão de requisitos?",
+            "answer": [
+                "Os requisitos são revisados para garantir que estão completos e claros.",
+                "Os requisitos são priorizados com base nas necessidades do negócio."
+            ],
+            "subcontent": "Revisão de requisitos",
+            "correct_answer": [
+                "Os requisitos são revisados para garantir que estão completos, claros e atingíveis.",
+                "Stakeholders discutem e ajustam os requisitos conforme necessário."
+            ]
+        }
+    ]
+}

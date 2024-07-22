@@ -1,0 +1,64 @@
+{
+    "questionnaire_title": "Metodologias Ágeis",
+    "questionnaire_content": "Metodologias Ágeis",
+    "questionnaire_external_id": "MA",
+    "student_email": "caiocesar31951910@hotmail.com",
+    "subject_code": "FGA1234",
+    "subject_name": "Requisitos de Software",
+    "teacher_email": "190085291@aluno.unb.br",
+    "model_settings_id": "d3e2032d-3389-4668-a01c-f1c22f7a6838",
+    "items": [
+        {
+            "question": "Explique o que são metodologias ágeis no desenvolvimento de software e como diferem das abordagens tradicionais, como o modelo cascata.",
+            "answer": [
+                "Metodologias ágeis são frameworks adaptativos que promovem colaboração e resposta rápida a mudanças, em contraste com o modelo cascata, que segue uma abordagem sequencial e linear. No ágil, o foco está na entrega contínua de software funcional, enquanto o cascata requer um planejamento detalhado no início do projeto."
+            ],
+            "subcontent": "Fundamentos das metodologias ágeis",
+            "correct_answer": [
+                "Metodologias ágeis são frameworks adaptativos que promovem colaboração e resposta rápida a mudanças, em contraste com o modelo cascata, que segue uma abordagem sequencial e linear. No ágil, o foco está na entrega contínua de software funcional, enquanto o cascata requer um planejamento detalhado no início do projeto."
+            ]
+        },
+        {
+            "question": "Discuta os valores e princípios fundamentais do Manifesto Ágil, explicando como esses princípios impactam o desenvolvimento de software.",
+            "answer": "O Manifesto Ágil prioriza a implementação de software robusto e confiável, desconsiderando a colaboração contínua com os stakeholders.",
+            "subcontent": "Manifesto Ágil",
+            "correct_answer": "Os valores do Manifesto Ágil destacam a importância de indivíduos e interações, software funcionando, colaboração com o cliente e resposta a mudanças, influenciando um desenvolvimento adaptativo e flexível."
+        },
+        {
+            "question": "Descreva os papéis principais dentro de um time Scrum e suas responsabilidades. Como esses papéis colaboram para o sucesso do projeto?",
+            "answer": "O time Scrum consiste em gerente de projeto, desenvolvedor e testador, cada um com responsabilidades específicas na execução de tarefas definidas.",
+            "subcontent": "Papéis em Scrum",
+            "correct_answer": "Os papéis principais incluem Product Owner, responsável pela definição de requisitos do produto; Scrum Master, facilitador do processo Scrum; e Time de Desenvolvimento, responsável pela implementação do software. A colaboração entre esses papéis garante um alinhamento claro com as necessidades do cliente e uma entrega contínua de valor."
+        },
+        {
+            "question": "Explique como as metodologias ágeis lidam com mudanças de requisitos durante o ciclo de desenvolvimento. Qual é a abordagem para garantir que as mudanças sejam gerenciadas de forma eficaz?",
+            "answer": "Mudanças de requisitos são implementadas apenas após revisão e aprovação formal do comitê de gerenciamento de mudanças, mantendo o controle sobre o escopo do projeto.",
+            "subcontent": "Gestão de mudanças em metodologias ágeis",
+            "correct_answer": "Metodologias ágeis permitem mudanças de requisitos a qualquer momento, incorporando feedback contínuo do cliente e ajustando o backlog do produto e o plano de desenvolvimento durante todo o ciclo de vida do projeto."
+        },
+        {
+            "question": "Como a prática de desenvolvimento orientado a testes (TDD) se encaixa nas metodologias ágeis? Quais são os benefícios de adotar essa prática?",
+            "answer": "O TDD é uma abordagem obsoleta que não se alinha com os princípios ágeis de entrega contínua e colaboração com o cliente.",
+            "subcontent": "Desenvolvimento orientado a testes",
+            "correct_answer": "O TDD é uma prática essencial em metodologias ágeis, pois promove a escrita de testes automatizados antes da implementação do código, garantindo a qualidade do software, facilitando a refatoração e permitindo uma entrega mais rápida e confiável."
+        },
+        {
+            "question": "Como a retrospectiva Scrum contribui para a melhoria contínua do processo de desenvolvimento de software? Quais são as etapas-chave para realizar uma retrospectiva eficaz?",
+            "answer": "A retrospectiva Scrum é uma prática opcional que não influencia significativamente a eficácia do processo de desenvolvimento de software.",
+            "subcontent": "Retrospectiva Scrum",
+            "correct_answer": "A retrospectiva Scrum é uma oportunidade para o time refletir sobre o processo de desenvolvimento, identificar pontos fortes e áreas de melhoria, e definir ações concretas para aumentar a eficácia e a eficiência do trabalho. As etapas-chave incluem coleta de dados, análise, identificação de melhorias e definição de planos de ação."
+        },
+        {
+            "question": "O que é feito na cerimônia Daily?",
+            "answer": [
+                "Comentado tarefas realizadas no dia anterior.",
+                "É feito a retrospectiva da sprint, apontando pontos positivos e negativos."
+            ],
+            "subcontent": "Cerimônias Scrum",
+            "correct_answer": [
+                "Comentado tarefas realizadas no dia anterior.",
+                "Comentado tarefas que serão realizadas no dia atual."
+            ]
+        }
+    ]
+}
