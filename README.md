@@ -25,4 +25,9 @@ DB_PORT=5432
 
 Acima está um exemplo de `.env` que armazena as configurações das credenciais do serviço de e-mail e do banco de dados local. As credenciais do serviço de e-mail servem para conseguirmos enviar um e-mail com o Feedback Formativo dos alunos ou os relatórios para professores. As configurações do banco de dados são usadas na inicialização do projeto para identificar um serviço de armazenamento de dados que será usado, se o desejado for local, pode ser copiado e colados as configurações, caso o objetivo seja conectar com algum serviço externo como um banco de dados na nuvem por exemplo, é necessário recuperar as informações desse serviço e preencher nos campos corretamente.
 
-Após configurar o `.env` da aplicação, basta rodar o comando `docker-compose up` para inicializar o projeto (requisito mínimo seria ter uma máquina que suporta Docker).
+Após configurar o `.env` da aplicação, basta rodar o comando `docker-compose up -d` para inicializar o projeto, sendo o `-d` opcional para evitar a lotação do terminal com informações desnecessárias (requisito mínimo seria ter uma máquina que suporta Docker).
+
+**Atenção:** 
+- A primeira vez que for executado demorará um pouco mais para fazer o download das imagens com o Docker, após isso a inicialização será sempre rápida;
+- Tenha certeza de colocar as credenciais de e-mail corretas, caso contrário os e-mails com Feedbacks não serão enviados;
+- Para verificar se e-mails estão sendo enviados ou não por meio dos logs da aplicação, basta acessar os logs do container `feedfor_celery_1`, por meio do comando `docker logs feedfor_celery_1 -f`, sendo o `-f` opcional para acompanhar os logs em tempo real.
