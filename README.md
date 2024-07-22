@@ -27,7 +27,10 @@ Acima está um exemplo de `.env` que armazena as configurações das credenciais
 
 Após configurar o `.env` da aplicação, basta rodar o comando `docker-compose up -d` para inicializar o projeto, sendo o `-d` opcional para evitar a lotação do terminal com informações desnecessárias (requisito mínimo seria ter uma máquina que suporta Docker).
 
+Quando a aplicação iniciar completamente pela **primeira vez**, é necessário executar alguns comandos para configurações do ambiente. Primeiro seria o comando `docker exec -it feedfor_web_1 python manage.py migrate` para aplicar as alterações no banco de dados do projeto. O segundo seria o `docker exec -it feedfor_web_1 python manage.py createsuperuser` para criar um super usuário no nosso banco para poder acessar a página de administrador que o Django nos proporciona.
+
 **Atenção:** 
 - A primeira vez que for executado demorará um pouco mais para fazer o download das imagens com o Docker, após isso a inicialização será sempre rápida;
 - Tenha certeza de colocar as credenciais de e-mail corretas, caso contrário os e-mails com Feedbacks não serão enviados;
 - Para verificar se e-mails estão sendo enviados ou não por meio dos logs da aplicação, basta acessar os logs do container `feedfor_celery_1`, por meio do comando `docker logs feedfor_celery_1 -f`, sendo o `-f` opcional para acompanhar os logs em tempo real.
+
