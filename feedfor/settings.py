@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "core",
     "django_select2",
+    "drf_yasg",
 ]
 
 MIDDLEWARE = [
