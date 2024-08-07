@@ -188,6 +188,6 @@ MODEL_CHOICES = [
 
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
-        "api_token": {"type": "Token", "in": "header", "name": "Authorization"}
+        "api_key": {"type": "apiKey", "in": "header", "name": "Authorization"}
     },
 }
