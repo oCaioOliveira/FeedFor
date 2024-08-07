@@ -1,0 +1,40 @@
+{
+  "questionnaire_title": "Requisitos de Software",
+  "questionnaire_content": "Requisitos de Software",
+  "questionnaire_external_id": "RFNFCSU",
+  "student_email": "190085291@aluno.unb.br",
+  "subject_code": "FGA1234",
+  "subject_name": "Requisitos de Software",
+  "teacher_email": "190085291@aluno.unb.br",
+  "chat_id": "48fb89a1-1088-47c6-8244-ab95056491ac",
+  "items": [
+    {
+      "question": "Explique o que são metodologias ágeis no desenvolvimento de software e como diferem das abordagens tradicionais, como o modelo cascata. Marque todas as alternativas corretas",
+      "answer": [
+        "Metodologias ágeis são frameworks adaptativos que promovem colaboração e resposta rápida a mudanças, em contraste com o modelo cascata, que segue uma abordagem sequencial e linear."
+      ],
+      "subcontent": "Fundamentos das metodologias ágeis",
+      "correct_answer": [
+        "Metodologias ágeis são frameworks adaptativos que promovem colaboração e resposta rápida a mudanças, em contraste com o modelo cascata, que segue uma abordagem sequencial e linear.",
+        "Nas metodologias ágeis, o foco está na entrega contínua de software funcional, enquanto o cascata requer um planejamento detalhado no início do projeto."
+      ]
+    },
+    {
+      "question": "Discuta os valores e princípios fundamentais do Manifesto Ágil, explicando como esses princípios impactam o desenvolvimento de software.",
+      "answer": "O Manifesto Ágil prioriza a implementação de software robusto e confiável, desconsiderando a colaboração contínua com os stakeholders.",
+      "subcontent": "Manifesto Ágil",
+      "correct_answer": "Os valores do Manifesto Ágil destacam a importância de indivíduos e interações, software funcionando, colaboração com o cliente e resposta a mudanças, influenciando um desenvolvimento adaptativo e flexível."
+    },
+    {
+      "question": "Descreva os papéis principais dentro de um time Scrum e suas responsabilidades. Como esses papéis colaboram para o sucesso do projeto?",
+      "answer": [
+        "O time Scrum consiste em gerente de projeto, desenvolvedor e testador, cada um com responsabilidades específicas na execução de tarefas definidas.",
+        "Os papéis principais incluem Product Owner, responsável pela definição de requisitos do produto; Scrum Master, facilitador do processo Scrum; e Time de Desenvolvimento, responsável pela implementação do software. A colaboração entre esses papéis garante um alinhamento claro com as necessidades do cliente e uma entrega contínua de valor."
+      ],
+      "subcontent": "Papéis em Scrum",
+      "correct_answer": [
+        "Os papéis principais incluem Product Owner, responsável pela definição de requisitos do produto; Scrum Master, facilitador do processo Scrum; e Time de Desenvolvimento, responsável pela implementação do software. A colaboração entre esses papéis garante um alinhamento claro com as necessidades do cliente e uma entrega contínua de valor."
+      ]
+    }
+  ]
+}

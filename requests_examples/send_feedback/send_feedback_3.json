@@ -6,7 +6,7 @@
     "subject_code": "FGA1234",
     "subject_name": "Requisitos de Software",
     "teacher_email": "190085291@aluno.unb.br",
-    "model_settings_id": "48fb89a1-1088-47c6-8244-ab95056491ac",
+    "chat_id": "48fb89a1-1088-47c6-8244-ab95056491ac",
     "items": [
         {
             "question": "Defina o que são requisitos funcionais e requisitos não funcionais em um projeto de software. Dê exemplos de cada tipo.",
