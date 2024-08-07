@@ -22,15 +22,94 @@ from .serializers import (
     ResendFeedbackSerializer,
     SendReportSerializer,
 )
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 import pandas as pd
 import io
-import os
 
 
 class SendFeedbackView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Submeter um questionário preenchido e gerar seu feedback",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "questionnaire_title": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Título do questionário"
+                ),
+                "questionnaire_content": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Conteúdo do questionário"
+                ),
+                "questionnaire_external_id": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="ID externo do questionário"
+                ),
+                "student_email": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Email do estudante"
+                ),
+                "subject_code": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Código da disciplina"
+                ),
+                "subject_name": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Nome da disciplina"
+                ),
+                "teacher_email": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Email do professor"
+                ),
+                "chat_id": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="ID do chat"
+                ),
+                "items": openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(
+                        type=openapi.TYPE_OBJECT,
+                        properties={
+                            "question": openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                description="Questão do questionário",
+                            ),
+                            "answer": openapi.Schema(
+                                type=openapi.TYPE_ARRAY,
+                                items=openapi.Items(type=openapi.TYPE_STRING),
+                                description="Respostas fornecidas pelo estudante",
+                            ),
+                            "subcontent": openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                description="Subconteúdo da questão",
+                            ),
+                            "correct_answer": openapi.Schema(
+                                type=openapi.TYPE_ARRAY,
+                                items=openapi.Items(type=openapi.TYPE_STRING),
+                                description="Respostas corretas para a questão",
+                            ),
+                        },
+                        required=["question", "answer", "subcontent", "correct_answer"],
+                    ),
+                    description="Itens do questionário",
+                ),
+            },
+            required=[
+                "questionnaire_title",
+                "questionnaire_content",
+                "questionnaire_external_id",
+                "student_email",
+                "subject_code",
+                "subject_name",
+                "teacher_email",
+                "chat_id",
+                "items",
+            ],
+        ),
+        responses={
+            status.HTTP_201_CREATED: openapi.Response(
+                "Questionário submetido com sucesso"
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response("Requisição inválida"),
+            status.HTTP_401_UNAUTHORIZED: openapi.Response("Não autorizado"),
+        },
+    )
     def post(self, request) -> Response:
         serializer = SendFeedbackSerializer(data=request.data)
 
@@ -190,6 +269,35 @@ class SendFeedbackView(APIView):
 class ResendFeedbackView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Reenviar um Feedback já criado",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "student_emails": openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Items(type=openapi.TYPE_STRING),
+                    description="Lista de emails dos estudantes",
+                ),
+                "questionnaire_external_id": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="ID externo do questionário"
+                ),
+                "feedback_recipient": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="Destinatário do feedback"
+                ),
+            },
+            required=[
+                "student_emails",
+                "questionnaire_external_id",
+                "feedback_recipient",
+            ],
+        ),
+        responses={
+            status.HTTP_200_OK: openapi.Response("Resending feedback"),
+            status.HTTP_400_BAD_REQUEST: openapi.Response("Requisição inválida"),
+            status.HTTP_401_UNAUTHORIZED: openapi.Response("Não autorizado"),
+        },
+    )
     def post(self, request) -> Response:
         serializer = ResendFeedbackSerializer(data=request.data)
 
@@ -288,6 +396,25 @@ class ResendFeedbackView(APIView):
 class SendReportView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @swagger_auto_schema(
+        operation_description="Solicitar um relatório de um questionário",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                "questionnaire_external_id": openapi.Schema(
+                    type=openapi.TYPE_STRING, description="ID externo do questionário"
+                ),
+            },
+            required=[
+                "questionnaire_external_id",
+            ],
+        ),
+        responses={
+            status.HTTP_200_OK: openapi.Response("Sending report"),
+            status.HTTP_400_BAD_REQUEST: openapi.Response("Requisição inválida"),
+            status.HTTP_401_UNAUTHORIZED: openapi.Response("Não autorizado"),
+        },
+    )
     def post(self, request) -> Response:
         serializer = SendReportSerializer(data=request.data)
 
