@@ -185,3 +185,9 @@ MODEL_CHOICES = [
     "gpt-4-turbo-preview",
     "gpt-4-turbo-2024-05-13",
 ]
+
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "api_key": {"type": "apiKey", "in": "header", "name": "Authorization"}
+    },
+}
