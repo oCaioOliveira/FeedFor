@@ -212,9 +212,19 @@ class SendFeedbackView(APIView):
                 },
             )
 
+            answer_text = item_data.get("answer")
+            try:
+                if answer_text.startswith("[") and answer_text.endswith("]"):
+                    answer_text = answer_text[2:-2]
+                    answer_text = answer_text.replace("\\", "")
+                    answer_text = answer_text.replace('\\"', '"')
+                    answer_text = answer_text.split('","')
+            except Exception:
+                pass
+
             answer, _ = Answer.objects.get_or_create(
                 item=item,
-                text=item_data.get("answer"),
+                text=answer_text,
             )
             answer.students.add(student)
             answers.append(answer)
