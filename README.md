@@ -1,33 +1,37 @@
-# Descrição
+# Description
 
-Esse projeto é uma API, com o objetivo de ser integrado a sistemas de educação, relacionados a aplicações de questionários.
+This project is an API designed to be integrated into educational systems related to questionnaire applications.
 
-Com as configurações e acessos necessários, essa API é capaz de receber informações sobre testes realizados com estudantes e construir um Feedback Formativo individual que será enviado ao e-mail indicando, com informações como justificativas em questões diferentes do gabarito e indicar possíveis pontos de aperfeiçoamento.
+With the required configurations and access permissions, this API can receive information about tests taken by students and generate individual Formative Feedback, which is sent by email. This feedback includes details such as justifications for answers that differ from the answer key and indicates possible areas for improvement.
 
-Além disso, é capaz de armazenar as informações sobre os questionários na sua base de dados, sendo possível solicitar um relatório em excel que será enviado para o professor da disciplina relacionada ao questionário.
+In addition, the API can store questionnaire data in its database, making it possible to request an Excel report that will be sent to the teacher responsible for the related subject.
 
-# Execução
+# Execution
 
-Esse vídeo é uma demonstração e tutorial de como utilizar o projeto FeedFor: [Link para o Vídeo](https://youtu.be/KL6FrNapAPk)
+This video is a demonstration and tutorial on how to use the FeedFor project:
+[![FeedFor Demo](https://img.youtube.com/vi/KL6FrNapAPk/0.jpg)](https://www.youtube.com/watch?v=KL6FrNapAPk)
 
-# Como Rodar
+# How to Run
 
-Para rodar a aplicação primeiro precisa ser configurado o `.env` na raiz do projeto:
+To run the application, you must first configure the `.env` file at the root of the project:
 
-```
+```env
 # EMAIL CREDENTIALS
 EMAIL_HOST_USER=youremail@hotmail.com
 EMAIL_HOST_PASSWORD=yourpassword
 ```
 
-Acima está um exemplo de `.env` que armazena as configurações das credenciais do serviço de e-mail e do banco de dados local. As credenciais do serviço de e-mail servem para conseguirmos enviar um e-mail com o Feedback Formativo dos alunos ou os relatórios para professores. As configurações do banco de dados são usadas na inicialização do projeto para identificar um serviço de armazenamento de dados que será usado, se o desejado for local, pode ser copiado e colados as configurações, caso o objetivo seja conectar com algum serviço externo como um banco de dados na nuvem por exemplo, é necessário recuperar as informações desse serviço e preencher nos campos corretamente.
+Above is an example of a `.env` file that stores the configuration for the email service credentials and the local database. The email service credentials are used to send emails containing students’ Formative Feedback or reports to teachers. The database settings are used during project initialization to identify the data storage service to be used. If a local setup is desired, the default settings can be copied and pasted. If the goal is to connect to an external service, such as a cloud database, you must retrieve the information from that service and fill in the fields correctly.
 
-Após configurar o `.env` da aplicação, basta rodar o comando `docker-compose up -d` para inicializar o projeto, sendo o `-d` opcional para evitar a lotação do terminal com informações desnecessárias (requisito mínimo seria ter uma máquina que suporta Docker).
+After configuring the application’s `.env` file, simply run the command `docker-compose up -d` to start the project. The `-d` flag is optional and prevents the terminal from being flooded with unnecessary logs (the minimum requirement is a machine that supports Docker).
 
-Quando a aplicação iniciar completamente pela **primeira vez**, é necessário executar alguns comandos para configurações do ambiente. Primeiro seria o comando `docker exec -it feedfor_web_1 python manage.py migrate` para aplicar as alterações no banco de dados do projeto. O segundo seria o `docker exec -it feedfor_web_1 python manage.py createsuperuser` para criar um super usuário no nosso banco para poder acessar a página de administrador que o Django nos proporciona.
+When the application starts for the **first time**, some additional commands must be executed to configure the environment:
 
-**Atenção:** 
-- A primeira vez que for executado demorará um pouco mais para fazer o download das imagens com o Docker, após isso a inicialização será sempre rápida;
-- Tenha certeza de colocar as credenciais de e-mail corretas, caso contrário os e-mails com Feedbacks não serão enviados;
-- Para verificar se e-mails estão sendo enviados ou não por meio dos logs da aplicação, basta acessar os logs do container `feedfor_celery_1`, por meio do comando `docker logs feedfor_celery_1 -f`, sendo o `-f` opcional para acompanhar os logs em tempo real.
+1. Run `docker exec -it feedfor_web_1 python manage.py migrate` to apply the database migrations.
+2. Run `docker exec -it feedfor_web_1 python manage.py createsuperuser` to create a superuser in the database, allowing access to the Django admin panel.
 
+**Attention:**
+
+* The first execution will take a bit longer due to Docker image downloads; after that, startup will always be fast.
+* Make sure to provide correct email credentials; otherwise, feedback emails will not be sent.
+* To check whether emails are being sent through the application logs, access the logs of the `feedfor_celery_1` container using the command `docker logs feedfor_celery_1 -f`. The `-f` flag is optional and allows you to follow the logs in real time.
